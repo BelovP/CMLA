@@ -16,7 +16,8 @@ else()
 endif()
 
 set(PACKAGES
-        norms)
+        norms
+        qr)
 
 add_subdirectory(yalal)
 if (BUILD_TESTS)
