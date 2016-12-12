@@ -11,15 +11,16 @@ typedef float real;
 #endif
 
 namespace yalal {
-    
+
     enum MatStructure {
-        ARBITRARY    = 0,
-        UPPER_TRI    = (1 << 0),
-        LOWER_TRI    = (1 << 1),
-        DIAGONAL     = UPPER_TRI | LOWER_TRI,
-        HESSENBERG   = (1 << 2),
-        LOWER_BIDIAG = HESSENBERG | LOWER_TRI,
-        UPPER_BIDIAG = (1 << 3),
+        DIAGONAL     = (1 << 0),
+        LOWER_BIDIAG = (1 << 1) | DIAGONAL,
+        UPPER_BIDIAG = (1 << 2) | DIAGONAL,
+        TRIDIAGONAL  = (1 << 3) | DIAGONAL | UPPER_BIDIAG | LOWER_BIDIAG,
+        LOWER_TRI    = (1 << 4) | DIAGONAL | LOWER_BIDIAG,
+        UPPER_TRI    = (1 << 5) | DIAGONAL | UPPER_BIDIAG,
+        HESSENBERG   = (1 << 6) | DIAGONAL | UPPER_BIDIAG | LOWER_BIDIAG | UPPER_TRI | TRIDIAGONAL,
+        ARBITRARY    = ~0
     };
 
 };

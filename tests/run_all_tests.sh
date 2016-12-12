@@ -1,4 +1,5 @@
 for file in test_*; do
-    echo "Running ${file}..."
+    printf "Running ${file}... "
     ./$file
+    echo "OK"
 done
