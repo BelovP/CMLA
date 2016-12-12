@@ -18,9 +18,8 @@ namespace yalal {
         LOWER_TRI    = (1 << 1),
         DIAGONAL     = UPPER_TRI | LOWER_TRI,
         HESSENBERG   = (1 << 2),
-        UPPER_BIDIAG = (1 << 3),
         LOWER_BIDIAG = HESSENBERG | LOWER_TRI,
-        UPPER_BIDIAG = (1 << 4),
+        UPPER_BIDIAG = (1 << 3),
     };
 
 };
