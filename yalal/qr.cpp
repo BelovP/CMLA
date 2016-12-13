@@ -4,7 +4,7 @@
 
 namespace yalal {
 
-    void QR_diagonal(cv::Mat_<real> A, cv::Mat_<real> &Q, cv::Mat_<real> &R) {
+    void QR_diagonal(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
         R = cv::Mat_<real>::eye(A.cols, A.cols);
         for (int i = 0; i < R.cols; ++i) {
             R.at<real>(i, i) = A.at<real>(i, i);
@@ -12,16 +12,16 @@ namespace yalal {
         Q = cv::Mat_<real>::eye(A.rows, A.cols);
     }
 
-    void QR_upperTri(cv::Mat_<real> A, cv::Mat_<real> &Q, cv::Mat_<real> &R) {
+    void QR_upperTri(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
         R = A;
         Q = cv::Mat_<real>::eye(A.rows, A.cols);
     }
 
-    void QR_GS(cv::Mat_<real> A, cv::Mat_<real> &Q, cv::Mat_<real> &R) {
+    void QR_GS(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
         cv::transpose(A, Q); // Q will be transposed back before return
         R = cv::Mat_<real>::eye(A.cols, A.cols);
 
-        cv::Mat_<real> A_i(1, A.rows); // accomodation for a_i
+        cv::Mat_<real> & A_i(1, A.rows); // accomodation for a_i
 
         for (int i = 0; i < Q.rows; ++i) {
             auto Q_i = Q.row(i);
@@ -47,11 +47,11 @@ namespace yalal {
         cv::transpose(Q, Q);
     }
 
-    void QR_GS_Modified(cv::Mat_<real> A, cv::Mat_<real> &Q, cv::Mat_<real> &R) {
+    void QR_GS_Modified(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
         cv::transpose(A, Q); // Q will be transposed back before return
         R = cv::Mat_<real>::eye(A.cols, A.cols);
 
-        cv::Mat_<real> A_i(1, A.rows); // accomodation for a_i
+        cv::Mat_<real> & A_i(1, A.rows); // accomodation for a_i
 
         for (int i = 0; i < Q.rows; ++i) {
             auto Q_i = Q.row(i);
@@ -77,38 +77,71 @@ namespace yalal {
         cv::transpose(Q, Q);
     }
 
-    void QR_Householder(cv::Mat_<real> A, cv::Mat_<real> &Q, cv::Mat_<real> &R) {
-        // TODO
-        cv::transpose(A, Q); // Q will be transposed back before return
-        R = cv::Mat_<real>::eye(A.cols, A.cols);
+    void QR_Householder(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
+        // it's actually Q*, will be transposed back at the end of the function
+        Q = cv::Mat_<real>::eye(A.rows, A.rows);
+        A.copyTo(R);
 
-        cv::Mat_<real> A_i(1, A.rows); // accomodation for a_i
+        cv::Mat_<real> v(R.rows, 1);  // accomodation for all v's
+        cv::Mat_<real> vR(R.rows, 1); // accomodation for v*R[j:,j:] and v*Q[j:]
+        cv::Mat_<real> & vQ = vR;     // a reference with different name for convenience
 
-        for (int i = 0; i < Q.rows; ++i) {
-            auto Q_i = Q.row(i);
+        real vNormSqr, vNorm, v0Sign, v0;
 
-            auto A_i_col = A.col(i);
-            std::copy(A_i_col.begin(), A_i_col.end(), A_i.begin());
+        for (int j = 0; j < R.cols; ++j) {
+            // Copy current column to v
+            vNormSqr = 0;
 
-            auto R_i_row = R.col(i);
-
-            for (int j = 0; j < i; ++j) {
-                auto Q_j = Q.row(j);
-                real dotProduct = A_i.dot(Q_j);
-                cv::addWeighted(Q_j, -dotProduct, Q_i, 1., 0., Q_i);
-
-                R.at<real>(j, i) = dotProduct;
+            for (int k = j; k < R.rows; ++k) {
+                real v_i = R.at<real>(k, j);
+                v.at<real>(k-j) = v_i;
+                vNormSqr += v_i * v_i;
             }
 
-            real Q_i_norm = vectorNorm(Q_i);
-            Q_i /= Q_i_norm;
-            R.row(i) *= Q_i_norm;
+            vNorm = std::sqrt(vNormSqr);
+            v0Sign = (v.at<real>(0) > 0 ? -1. : 1.);
+            v0 = v.at<real>(0);
+
+            v.at<real>(0) -= v0Sign * vNorm;
+            v /= v0Sign * std::sqrt(2. * (vNormSqr - v0Sign * vNorm * v0));
+
+            // Compute v * R[j:,j:]
+            vR = 0;
+
+            for (int i1 = j; i1 < R.rows; ++i1) {
+                for (int j1 = j; j1 < R.cols; ++j1) {
+                    vR.at<real>(j1-j) += v.at<real>(i1-j) * R.at<real>(i1, j1);
+                }
+            }
+
+            // R[j:,j:] -= 2. * outer(v, v * R[i:,i:])
+            for (int i1 = j; i1 < R.rows; ++i1) {
+                for (int j1 = j; j1 < R.cols; ++j1) {
+                    R.at<real>(i1, j1) -= 2. * v.at<real>(i1-j) * vR.at<real>(j1-j);
+                }
+            }
+
+            // Compute v * Q[j:]
+            vQ = 0; // Remember: vQ refers to vR
+
+            for (int i1 = j; i1 < Q.rows; ++i1) {
+                for (int j1 = 0; j1 < Q.cols; ++j1) {
+                    vQ.at<real>(j1) += v.at<real>(i1-j) * Q.at<real>(i1, j1);
+                }
+            }
+
+            // Q[j:] -= 2. * outer(v, v * Q[j:])
+            for (int i1 = j; i1 < Q.rows; ++i1) {
+                for (int j1 = 0; j1 < Q.cols; ++j1) {
+                    Q.at<real>(i1, j1) -= 2. * v.at<real>(i1-j) * vQ.at<real>(j1);
+                }
+            }
         }
 
         cv::transpose(Q, Q);
     }
 
-    void QR_Givens(cv::Mat_<real> A, cv::Mat_<real> &Q, cv::Mat_<real> &R) {
+    void QR_Givens(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
         // it's actually Q*, will be transposed back at the end of the function
         Q = cv::Mat_<real>::eye(A.rows, A.rows);
         A.copyTo(R);
@@ -151,38 +184,7 @@ namespace yalal {
         cv::transpose(Q, Q);
     }
 
-    void QR_Givens_Hess(cv::Mat_<real> A, cv::Mat_<real> &Q, cv::Mat_<real> &R) {
-        // TODO
-        cv::transpose(A, Q); // Q will be transposed back before return
-        R = cv::Mat_<real>::eye(A.cols, A.cols);
-
-        cv::Mat_<real> A_i(1, A.rows); // accomodation for a_i
-
-        for (int i = 0; i < Q.rows; ++i) {
-            auto Q_i = Q.row(i);
-
-            auto A_i_col = A.col(i);
-            std::copy(A_i_col.begin(), A_i_col.end(), A_i.begin());
-
-            auto R_i_row = R.col(i);
-
-            for (int j = 0; j < i; ++j) {
-                auto Q_j = Q.row(j);
-                real dotProduct = A_i.dot(Q_j);
-                cv::addWeighted(Q_j, -dotProduct, Q_i, 1., 0., Q_i);
-
-                R.at<real>(j, i) = dotProduct;
-            }
-
-            real Q_i_norm = vectorNorm(Q_i);
-            Q_i /= Q_i_norm;
-            R.row(i) *= Q_i_norm;
-        }
-
-        cv::transpose(Q, Q);
-    }
-
-    void QR(cv::Mat_<real> A, cv::Mat_<real> & Q, cv::Mat_<real> & R,
+    void QR(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R,
             int method, int matStructure) {
 
         assert(A.rows >= A.cols);
@@ -196,8 +198,9 @@ namespace yalal {
         }
 
         else if ((matStructure | HESSENBERG) == HESSENBERG) {
-            // Regardless of choice
-            QR_Givens_Hess(A, Q, R);
+            // Regardless of choice, do Givens QR.
+            // QR_Givens is already optimized for many zero elements below the diagonal
+            QR_Givens(A, Q, R);
         }
 
         else {

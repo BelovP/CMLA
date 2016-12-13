@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <chrono>
 #include "qr.hpp"
 
 const real EPS = 1e-4;
@@ -30,6 +31,7 @@ int main(int argc, char* argv[]) {
 
     // random
     mats[0].create(235, 177);
+//    mats[0] = (cv::Mat_<real>(3,2) << 1,2,3,7,9,6);
     cv::randu(mats[0], -1., 1.);
 
     // diagonal
@@ -81,18 +83,35 @@ int main(int argc, char* argv[]) {
         mats[7].at<real>(i, rand() % sparseMatSize) += (cv::randu<real>() - 0.5) * 4;
     }
 
+    typedef std::chrono::microseconds Microseconds;
+    typedef std::chrono::steady_clock Clock;
+    typedef Clock::time_point Time;
+
     cv::Mat_<real> Q, R;
 
     for (int qrType = 0; qrType < qrTypes.size(); ++qrType) {
+        if (verbose) {
+            std::cout << "*** " << qrTypes[qrType] << " ***" << std::endl;
+        }
+
         for (int matType = 0; matType < matTypes.size(); ++matType) {
 
-            QR(mats[matType], Q, R, qrType);//, matTypeFlags[matType]);
+            Time start = Clock::now();
+
+            QR(mats[matType], Q, R, qrType, matTypeFlags[matType]);
+
+            Time end = Clock::now();
+            float duration =
+                (float)std::chrono::duration_cast<Microseconds>(end - start).count() / 1000;
+
             real error = cv::norm(Q * R - mats[matType], cv::NORM_L2);
 
             if (verbose) {
                 std::cout << "||QR-A|| = " << error << ",\t"
                 << "||Q*Q|| = " << cv::norm(Q.t() * Q - cv::Mat_<real>::eye(Q.cols, Q.cols))
-                << ",\t" << matTypes[matType] << std::endl;
+                << ",\t" << duration << " ms"
+                << ",\t" << matTypes[matType]
+                << std::endl;
             }
 
             if (error > 6e-4) {
