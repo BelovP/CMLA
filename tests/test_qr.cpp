@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include "qr.hpp"
 
 const real EPS = 1e-4;
@@ -7,20 +8,23 @@ using yalal::QR;
 using yalal::QRMethod;
 using yalal::MatStructure;
 
-int main() {
+int main(int argc, char* argv[]) {
+
+    bool verbose = (argc > 1 && !strcmp(argv[1], "-v"));
+    std::cout.precision(7);
+    std::cout << std::fixed;
 
     std::vector<const char*> qrTypes =
             {"GS", "Modified GS", "Householder", "Givens"};
-    std::vector<real> allowedError =
-            {3e-2, 1e-3, 1e-4, 1e-4};
 
     std::vector<const char*> matTypes =
             {"random", "diagonal", "diagonal (treated as arbitrary)",
-             "Hilbert", "upper triangular", "lower triangular", "tridiagonal"};
+             "Hilbert", "upper triangular", "lower triangular",
+             "tridiagonal", "sparse"};
     std::vector<MatStructure> matTypeFlags =
             {MatStructure::ARBITRARY, MatStructure::DIAGONAL, MatStructure::ARBITRARY,
              MatStructure::ARBITRARY, MatStructure::UPPER_TRI, MatStructure::LOWER_TRI,
-             MatStructure::TRIDIAGONAL};
+             MatStructure::TRIDIAGONAL, MatStructure::ARBITRARY};
 
     std::vector<cv::Mat_<real>> mats(matTypes.size());
 
@@ -57,11 +61,24 @@ int main() {
     cv::transpose(mats[4], mats[5]);
 
     // tridiagonal
-    mats[6] = cv::Mat_<real>::zeros(345, 345);
-    for (int i = 0; i < 345; ++i) {
-        for (int j = std::max(0, i-1); j < std::min(345-1, i+1); ++j) {
+    mats[6] = cv::Mat_<real>::zeros(7,7);
+    for (int i = 0; i < mats[6].rows; ++i) {
+        for (int j = std::max(0, i-1); j <= std::min(mats[6].cols-1, i+1); ++j) {
             mats[6].at<real>(i, j) = (cv::randu<real>() - 0.5) * 10;
         }
+    }
+
+    const int sparseMatSize = 233;
+    mats[7] = cv::Mat_<real>::zeros(sparseMatSize, sparseMatSize);
+    std::vector<int> permutation(sparseMatSize);
+    for (int i = 0; i < sparseMatSize; ++i) {
+        permutation[i] = i;
+    }
+    std::random_shuffle(permutation.begin(), permutation.end());
+    for (int i = 0; i < sparseMatSize; ++i) {
+        mats[7].at<real>(i, permutation[i]) = 5 * real(i) / sparseMatSize;
+        mats[7].at<real>(i, rand() % sparseMatSize) += (cv::randu<real>() - 0.5) * 4;
+        mats[7].at<real>(i, rand() % sparseMatSize) += (cv::randu<real>() - 0.5) * 4;
     }
 
     cv::Mat_<real> Q, R;
@@ -69,10 +86,16 @@ int main() {
     for (int qrType = 0; qrType < qrTypes.size(); ++qrType) {
         for (int matType = 0; matType < matTypes.size(); ++matType) {
 
-            QR(mats[matType], Q, R, qrType, matTypeFlags[matType]);
+            QR(mats[matType], Q, R, qrType);//, matTypeFlags[matType]);
             real error = cv::norm(Q * R - mats[matType], cv::NORM_L2);
 
-            if (error > allowedError[qrType]) {
+            if (verbose) {
+                std::cout << "||QR-A|| = " << error << ",\t"
+                << "||Q*Q|| = " << cv::norm(Q.t() * Q - cv::Mat_<real>::eye(Q.cols, Q.cols))
+                << ",\t" << matTypes[matType] << std::endl;
+            }
+
+            if (error > 6e-4) {
                 std::cout <<
                     "Wrong result for " << qrTypes[qrType] << " QR at " <<
                     mats[matType].rows << " x " << mats[matType].cols <<
@@ -80,6 +103,10 @@ int main() {
                     error << std::endl;
                 return 1;
             }
+        }
+
+        if (verbose) {
+            std::cout << std::endl;
         }
     }
 
