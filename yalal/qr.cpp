@@ -21,7 +21,7 @@ namespace yalal {
         cv::transpose(A, Q); // Q will be transposed back before return
         R = cv::Mat_<real>::eye(A.cols, A.cols);
 
-        cv::Mat_<real> & A_i(1, A.rows); // accomodation for a_i
+        cv::Mat_<real> A_i(1, A.rows); // accomodation for a_i
 
         for (int i = 0; i < Q.rows; ++i) {
             auto Q_i = Q.row(i);
@@ -51,7 +51,7 @@ namespace yalal {
         cv::transpose(A, Q); // Q will be transposed back before return
         R = cv::Mat_<real>::eye(A.cols, A.cols);
 
-        cv::Mat_<real> & A_i(1, A.rows); // accomodation for a_i
+        cv::Mat_<real> A_i(1, A.rows); // accomodation for a_i
 
         for (int i = 0; i < Q.rows; ++i) {
             auto Q_i = Q.row(i);
