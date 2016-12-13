@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
     // diagonal
     mats[1] = cv::Mat_<real>::zeros(117, 117);
     for (int i = 0; i < mats[1].rows; ++i) {
-        mats[1].at<real>(i, i) = (cv::randu<real>() - 0.5) * 100;
+        mats[1](i, i) = (cv::randu<real>() - 0.5) * 100;
     }
 
     // diagonal
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     mats[3].create(127, 127);
     for (int i = 0; i < mats[3].rows; ++i) {
         for (int j = 0; j < mats[3].cols; ++j) {
-            mats[3].at<real>(i, j) = 1. / (i + j + 1);
+            mats[3](i, j) = 1. / (i + j + 1);
         }
     }
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
     mats[4] = cv::Mat_<real>::zeros(354, 354);
     for (int i = 0; i < 354; ++i) {
         for (int j = i; j < 354; ++j) {
-            mats[4].at<real>(i, j) = (cv::randu<real>() - 0.5) * 2.;
+            mats[4](i, j) = (cv::randu<real>() - 0.5) * 2.;
         }
     }
 
@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     mats[6] = cv::Mat_<real>::zeros(7,7);
     for (int i = 0; i < mats[6].rows; ++i) {
         for (int j = std::max(0, i-1); j <= std::min(mats[6].cols-1, i+1); ++j) {
-            mats[6].at<real>(i, j) = (cv::randu<real>() - 0.5) * 10;
+            mats[6](i, j) = (cv::randu<real>() - 0.5) * 10;
         }
     }
 
@@ -78,9 +78,9 @@ int main(int argc, char* argv[]) {
     }
     std::random_shuffle(permutation.begin(), permutation.end());
     for (int i = 0; i < sparseMatSize; ++i) {
-        mats[7].at<real>(i, permutation[i]) = 5 * real(i) / sparseMatSize;
-        mats[7].at<real>(i, rand() % sparseMatSize) += (cv::randu<real>() - 0.5) * 4;
-        mats[7].at<real>(i, rand() % sparseMatSize) += (cv::randu<real>() - 0.5) * 4;
+        mats[7](i, permutation[i]) = 5 * real(i) / sparseMatSize;
+        mats[7](i, rand() % sparseMatSize) += (cv::randu<real>() - 0.5) * 4;
+        mats[7](i, rand() % sparseMatSize) += (cv::randu<real>() - 0.5) * 4;
     }
 
     typedef std::chrono::microseconds Microseconds;
@@ -101,8 +101,7 @@ int main(int argc, char* argv[]) {
             QR(mats[matType], Q, R, qrType, matTypeFlags[matType]);
 
             Time end = Clock::now();
-            float duration =
-                (float)std::chrono::duration_cast<Microseconds>(end - start).count() / 1000;
+            int duration = std::chrono::duration_cast<Microseconds>(end - start).count() / 1000;
 
             real error = cv::norm(Q * R - mats[matType], cv::NORM_L2);
 

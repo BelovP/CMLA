@@ -7,7 +7,7 @@ namespace yalal {
     void QR_diagonal(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
         R = cv::Mat_<real>::eye(A.cols, A.cols);
         for (int i = 0; i < R.cols; ++i) {
-            R.at<real>(i, i) = A.at<real>(i, i);
+            R(i, i) = A(i, i);
         }
         Q = cv::Mat_<real>::eye(A.rows, A.cols);
     }
@@ -36,7 +36,7 @@ namespace yalal {
                 real dotProduct = A_i.dot(Q_j);
                 cv::addWeighted(Q_j, -dotProduct, Q_i, 1., 0., Q_i);
 
-                R.at<real>(j, i) = dotProduct;
+                R(j, i) = dotProduct;
             }
 
             real Q_i_norm = vectorNorm(Q_i);
@@ -66,7 +66,7 @@ namespace yalal {
                 real dotProduct = Q_i.dot(Q_j);
                 cv::addWeighted(Q_j, -dotProduct, Q_i, 1., 0., Q_i);
 
-                R.at<real>(j, i) = dotProduct;
+                R(j, i) = dotProduct;
             }
 
             real Q_i_norm = vectorNorm(Q_i);
@@ -93,16 +93,16 @@ namespace yalal {
             vNormSqr = 0;
 
             for (int k = j; k < R.rows; ++k) {
-                real v_i = R.at<real>(k, j);
-                v.at<real>(k-j) = v_i;
+                real v_i = R(k, j);
+                v(k-j) = v_i;
                 vNormSqr += v_i * v_i;
             }
 
             vNorm = std::sqrt(vNormSqr);
-            v0Sign = (v.at<real>(0) > 0 ? -1. : 1.);
-            v0 = v.at<real>(0);
+            v0Sign = (v(0) > 0 ? -1. : 1.);
+            v0 = v(0);
 
-            v.at<real>(0) -= v0Sign * vNorm;
+            v(0) -= v0Sign * vNorm;
             v /= v0Sign * std::sqrt(2. * (vNormSqr - v0Sign * vNorm * v0));
 
             // Compute v * R[j:,j:]
@@ -110,14 +110,14 @@ namespace yalal {
 
             for (int i1 = j; i1 < R.rows; ++i1) {
                 for (int j1 = j; j1 < R.cols; ++j1) {
-                    vR.at<real>(j1-j) += v.at<real>(i1-j) * R.at<real>(i1, j1);
+                    vR(j1-j) += v(i1-j) * R(i1, j1);
                 }
             }
 
             // R[j:,j:] -= 2. * outer(v, v * R[i:,i:])
             for (int i1 = j; i1 < R.rows; ++i1) {
                 for (int j1 = j; j1 < R.cols; ++j1) {
-                    R.at<real>(i1, j1) -= 2. * v.at<real>(i1-j) * vR.at<real>(j1-j);
+                    R(i1, j1) -= 2. * v(i1-j) * vR(j1-j);
                 }
             }
 
@@ -126,14 +126,14 @@ namespace yalal {
 
             for (int i1 = j; i1 < Q.rows; ++i1) {
                 for (int j1 = 0; j1 < Q.cols; ++j1) {
-                    vQ.at<real>(j1) += v.at<real>(i1-j) * Q.at<real>(i1, j1);
+                    vQ(j1) += v(i1-j) * Q(i1, j1);
                 }
             }
 
             // Q[j:] -= 2. * outer(v, v * Q[j:])
             for (int i1 = j; i1 < Q.rows; ++i1) {
                 for (int j1 = 0; j1 < Q.cols; ++j1) {
-                    Q.at<real>(i1, j1) -= 2. * v.at<real>(i1-j) * vQ.at<real>(j1);
+                    Q(i1, j1) -= 2. * v(i1-j) * vQ(j1);
                 }
             }
         }
@@ -153,10 +153,10 @@ namespace yalal {
                 // Otherwise:
                 real x_i, x_j, coeff, cos_a, sin_a, x_i_new, x_j_new;
 
-                if (std::abs(R.at<real>(i,j)) > 5e-7) {
+                if (std::abs(R(i,j)) > 5e-7) {
                     // Prepare the rotation
-                    x_i = R.at<real>(i-1,j);
-                    x_j = R.at<real>(i,j);
+                    x_i = R(i-1,j);
+                    x_j = R(i,j);
 
                     coeff = real(1.) / std::sqrt(x_i*x_i + x_j*x_j);
                     cos_a =  x_i * coeff;
@@ -164,18 +164,18 @@ namespace yalal {
 
                     // Rotate rows
                     for (int k = j; k < R.cols; ++k) {
-                        x_i_new = R.at<real>(i-1,k) * cos_a - R.at<real>(i,k) * sin_a;
-                        x_j_new = R.at<real>(i-1,k) * sin_a + R.at<real>(i,k) * cos_a;
-                        R.at<real>(i-1,k) = x_i_new;
-                        R.at<real>(i  ,k) = x_j_new;
+                        x_i_new = R(i-1,k) * cos_a - R(i,k) * sin_a;
+                        x_j_new = R(i-1,k) * sin_a + R(i,k) * cos_a;
+                        R(i-1,k) = x_i_new;
+                        R(i  ,k) = x_j_new;
                     }
 
                     // Rotate rows of Q
                     for (int k = 0; k < Q.cols; ++k) {
-                        x_i_new = Q.at<real>(i-1,k) * cos_a - Q.at<real>(i,k) * sin_a;
-                        x_j_new = Q.at<real>(i-1,k) * sin_a + Q.at<real>(i,k) * cos_a;
-                        Q.at<real>(i-1,k) = x_i_new;
-                        Q.at<real>(i  ,k) = x_j_new;
+                        x_i_new = Q(i-1,k) * cos_a - Q(i,k) * sin_a;
+                        x_j_new = Q(i-1,k) * sin_a + Q(i,k) * cos_a;
+                        Q(i-1,k) = x_i_new;
+                        Q(i  ,k) = x_j_new;
                     }
                 }
             }
