@@ -5,7 +5,11 @@ for file in test_*; do
     fi
 
     ./$file $1
-    echo "OK"
+    if [ "$?" == "0" ]; then
+        echo "OK"
+    else
+        break
+    fi
 
     if [ "$1" == "-v" ]; then
         echo

@@ -4,9 +4,9 @@ namespace yalal {
 
 	// LU algorithm without pivoting. 
     bool LU(cv::Mat_<real> A, cv::Mat_<real> & L, cv::Mat_<real> & U,
-            int matStructure = ARBITRARY);
+            int matStructure = MatStructure::ARBITRARY);
 
     // LU algorithm with partial pivoting. PA = LU
     bool LU(cv::Mat_<real> A, cv::Mat_<real> & L, cv::Mat_<real> & U,cv::Mat_<real> & P,  
-    		int matStructure = ARBITRARY);
+    		int matStructure = MatStructure::ARBITRARY);
 }

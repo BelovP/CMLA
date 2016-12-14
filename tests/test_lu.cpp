@@ -2,10 +2,15 @@
 #include "lu.hpp"
 
 const real EPS = 1e-4;
+
+#ifdef DOUBLE_PRECISION
 const real allowedError = 1e-3;
+#else
+const real allowedError = 20.;
+#endif
 
 using std::string;
-using yalal::MatStructure;
+using namespace yalal::MatStructure;
 
 bool hasErrors(cv::Mat_<real>& A, cv::Mat_<real>& L, cv::Mat_<real>& U, cv::Mat_<real>& P, bool success, bool pivoting, string matrix_type) {
     // Check that no internal errors occured.
