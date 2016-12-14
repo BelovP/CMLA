@@ -1,13 +1,13 @@
 #include <iostream>
 #include <algorithm>
 #include <chrono>
+
 #include "qr.hpp"
 
 const real EPS = 1e-4;
 
 using yalal::QR;
-using yalal::QRMethod;
-using yalal::MatStructure;
+using namespace yalal::MatStructure;
 
 int main(int argc, char* argv[]) {
 
@@ -22,16 +22,16 @@ int main(int argc, char* argv[]) {
             {"random", "diagonal", "diagonal (treated as arbitrary)",
              "Hilbert", "upper triangular", "lower triangular",
              "tridiagonal", "sparse"};
+
     std::vector<MatStructure> matTypeFlags =
-            {MatStructure::ARBITRARY, MatStructure::DIAGONAL, MatStructure::ARBITRARY,
-             MatStructure::ARBITRARY, MatStructure::UPPER_TRI, MatStructure::LOWER_TRI,
-             MatStructure::TRIDIAGONAL, MatStructure::ARBITRARY};
+            {ARBITRARY, DIAGONAL, ARBITRARY,
+             ARBITRARY, UPPER_TRI, LOWER_TRI,
+             TRIDIAGONAL, ARBITRARY};
 
     std::vector<cv::Mat_<real>> mats(matTypes.size());
 
     // random
-    mats[0].create(235, 177);
-//    mats[0] = (cv::Mat_<real>(3,2) << 1,2,3,7,9,6);
+    mats[0].create(233, 199);
     cv::randu(mats[0], -1., 1.);
 
     // diagonal
@@ -53,8 +53,8 @@ int main(int argc, char* argv[]) {
 
     // upper triangular
     mats[4] = cv::Mat_<real>::zeros(354, 354);
-    for (int i = 0; i < 354; ++i) {
-        for (int j = i; j < 354; ++j) {
+    for (int i = 0; i < mats[4].rows; ++i) {
+        for (int j = i; j < mats[4].cols; ++j) {
             mats[4](i, j) = (cv::randu<real>() - 0.5) * 2.;
         }
     }
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
     cv::transpose(mats[4], mats[5]);
 
     // tridiagonal
-    mats[6] = cv::Mat_<real>::zeros(7,7);
+    mats[6] = cv::Mat_<real>::zeros(457, 457);
     for (int i = 0; i < mats[6].rows; ++i) {
         for (int j = std::max(0, i-1); j <= std::min(mats[6].cols-1, i+1); ++j) {
             mats[6](i, j) = (cv::randu<real>() - 0.5) * 10;
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 
             Time start = Clock::now();
 
-            QR(mats[matType], Q, R, qrType, matTypeFlags[matType]);
+            QR(mats[matType], Q, R, matTypeFlags[matType], qrType);
 
             Time end = Clock::now();
             int duration = std::chrono::duration_cast<Microseconds>(end - start).count() / 1000;
@@ -109,7 +109,8 @@ int main(int argc, char* argv[]) {
                 std::cout << "||QR-A|| = " << error << ",\t"
                 << "||Q*Q|| = " << cv::norm(Q.t() * Q - cv::Mat_<real>::eye(Q.cols, Q.cols))
                 << ",\t" << duration << " ms"
-                << ",\t" << matTypes[matType]
+                << ",\t" << mats[matType].rows << " x " << mats[matType].cols
+                << " " << matTypes[matType]
                 << std::endl;
             }
 
@@ -119,6 +120,22 @@ int main(int argc, char* argv[]) {
                     mats[matType].rows << " x " << mats[matType].cols <<
                     " " << matTypes[matType] << " matrix: ||QR-A|| = " <<
                     error << std::endl;
+                return 1;
+            }
+
+            real lowerTriangleMax = 0;
+            for (int i = 0; i < R.rows; ++i) {
+                for (int j = 0; j < std::min(R.cols, i - 1); ++j) {
+                    lowerTriangleMax = std::max(lowerTriangleMax, std::abs(R(i, j)));
+                }
+            }
+
+            if (lowerTriangleMax > 4e-5) {
+                std::cout <<
+                "Wrong result for " << qrTypes[qrType] << " QR at " <<
+                mats[matType].rows << " x " << mats[matType].cols <<
+                " " << matTypes[matType] << " matrix: R is not triangular"
+                " enough (" << lowerTriangleMax << ")" << std::endl;
                 return 1;
             }
         }

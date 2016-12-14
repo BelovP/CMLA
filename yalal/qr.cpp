@@ -1,6 +1,9 @@
+#include <iostream>
+
 #include "qr.hpp"
 #include "norms.hpp"
-#include <iostream>
+
+using namespace yalal::MatStructure;
 
 namespace yalal {
 
@@ -17,7 +20,7 @@ namespace yalal {
         Q = cv::Mat_<real>::eye(A.rows, A.cols);
     }
 
-    void QR_GS(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
+    void QR_GS_Plain(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
         cv::transpose(A, Q); // Q will be transposed back before return
         R = cv::Mat_<real>::eye(A.cols, A.cols);
 
@@ -185,7 +188,7 @@ namespace yalal {
     }
 
     void QR(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R,
-            int method, int matStructure) {
+            int matStructure, int method) {
 
         assert(A.rows >= A.cols);
 
@@ -206,7 +209,7 @@ namespace yalal {
         else {
             switch (method) {
                 case QRMethod::GS: {
-                    QR_GS(A, Q, R);
+                    QR_GS_Plain(A, Q, R);
                     break;
                 }
                 case QRMethod::GS_MODIFIED: {

@@ -3,7 +3,7 @@
 
 const real EPS = 1e-4;
 
-using yalal::VectorNorm;
+using namespace yalal::VectorNorm;
 using yalal::vectorNorm;
 
 bool testVectorNorm(cv::Mat_<real> & vec) {
