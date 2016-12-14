@@ -1,8 +1,8 @@
 project(yalal)
 cmake_minimum_required(VERSION 2.6)
 
-option(BUILD_TESTS      "Build unit tests"              OFF)
-option(DOUBLE_PRECISION "Doubles instead of floats"     OFF)
+option(BUILD_TESTS      "Build unit tests"              ON)
+option(DOUBLE_PRECISION "Doubles instead of floats"     ON)
 
 if (DOUBLE_PRECISION)
     add_definitions(-DDOUBLE_PRECISION)
@@ -17,7 +17,8 @@ endif()
 
 set(PACKAGES
         norms
-        qr)
+        qr
+	lu)
 
 add_subdirectory(yalal)
 if (BUILD_TESTS)
