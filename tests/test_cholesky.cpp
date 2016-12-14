@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     std::vector<cv::Mat_<real>> mats(matTypes.size());
 
     // small random symmetric positive definite
-    mats[0].create(15, 15);
+    mats[0].create(7, 7);
     cv::randu(mats[0], -1., 1.);
     mats[0] = mats[0].t() * mats[0];
 
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
             << std::endl;
         }
 
-        if (error > 6e-4) {
+        if (error > 5e-3) {
             std::cout <<
             "Wrong result for Cholesky at " <<
             mats[matType].rows << " x " << mats[matType].cols <<
@@ -92,19 +92,19 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        real lowerTriangleMax = 0;
+        real upperTriangleMax = 0;
         for (int i = 0; i < L.rows; ++i) {
-            for (int j = 0; j < std::min(L.cols, i - 1); ++j) {
-                lowerTriangleMax = std::max(lowerTriangleMax, std::abs(R(i, j)));
+            for (int j = i + 1; j < L.cols; ++j) {
+                upperTriangleMax = std::max(upperTriangleMax, std::abs(L(i, j)));
             }
         }
 
-        if (lowerTriangleMax > 4e-5) {
+        if (upperTriangleMax > 4e-5) {
             std::cout <<
             "Wrong result for Cholesky at " <<
             mats[matType].rows << " x " << mats[matType].cols <<
             " " << matTypes[matType] << " matrix: L is not triangular"
-                    " enough (" << lowerTriangleMax << ")" << std::endl;
+                    " enough (" << upperTriangleMax << ")" << std::endl;
             return 1;
         }
     }

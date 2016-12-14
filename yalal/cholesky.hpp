@@ -2,13 +2,16 @@
 
 namespace yalal {
 
-    enum CholeskyMethod {
-        CHOLESKY_CHOLESKY,
-        CHOLESKY_BANACHIEWICZ,
-        CHOLESKY_CROUT
+    namespace CholeskyMethod {
+        enum {
+            OUTER_PRODUCT,
+            CHOLESKY_BANACHIEWICZ,
+            CHOLESKY_CROUT
+        };
     };
 
     void Cholesky(cv::Mat_<real> & A, cv::Mat_<real> & L,
-                  int matStructure = ARBITRARY, int method = CHOLESKY_CHOLESKY);
+                  int matStructure = MatStructure::ARBITRARY,
+                  int method = CholeskyMethod::OUTER_PRODUCT);
 
 };
