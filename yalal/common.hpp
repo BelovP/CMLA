@@ -5,9 +5,9 @@
 #include <opencv2/core.hpp>
 
 #ifdef DOUBLE_PRECISION
-typedef double real;
+#define real double
 #else
-typedef float real;
+#define real float
 #endif
 
 namespace yalal {

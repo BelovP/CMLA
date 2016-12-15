@@ -19,6 +19,7 @@ set(PACKAGES
         norms qr lu cholesky)
 
 add_subdirectory(yalal)
+add_subdirectory(speed_comparison)
 if (BUILD_TESTS)
     add_subdirectory(tests)
 endif()
