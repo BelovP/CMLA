@@ -56,8 +56,35 @@ bool hasErrors(cv::Mat_<real>& A, cv::Mat_<real>& L, cv::Mat_<real>& U, cv::Mat_
     return 0;
 }
 
+void RecoverLU(cv::Mat_<real>& A, cv::Mat_<real>& L, cv::Mat_<real>& U) {
+    int n = A.rows;
+    L.create(n, n);
+    U.create(n, n);
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            L(i, j) = 0;
+            U(i, j) = 0;
+        }
+    }
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (j < i) {
+                L(i, j) = A(i, j);
+            }
+            else {
+                U(i, j) = A(i, j);
+            }
+            if (j == i) {
+                L(i, j) = 1;
+            }
+        }
+    }
+}
+
 int main() {
-    cv::Mat_<real> A, L, U, P;
+    cv::Mat_<real> A, L, U, P, A_init;
     bool success;
 
     // Random matrix.
@@ -65,15 +92,20 @@ int main() {
     //float dummy_data[4] = { 4, 3, 6, 3};
     //float dummy_data[9] = { 1, -2, 3, 2, -5, 12, 0, 2, -10};
     //A = cv::Mat(3, 3, CV_32F, dummy_data);
-    cv::randu(A, -10., 10.);
-    success = yalal::LU(A, L, U, MatStructure::ARBITRARY);
+    cv::randu(A, 10., 20.);
 
-    if(hasErrors(A, L, U, P, success, false, "random")) return 1; 
+    A.copyTo(A_init);
+    success = yalal::LU(A, MatStructure::ARBITRARY);
+    RecoverLU(A, L, U);
+
+    if(hasErrors(A_init, L, U, P, success, false, "random")) return 1; 
 
     // Random matrix. Decompose with pivoting.
-    success = yalal::LU(A, L, U, P, MatStructure::ARBITRARY);
+    A.copyTo(A_init);
+    success = yalal::LU(A, P, MatStructure::ARBITRARY);
+    RecoverLU(A, L, U);
 
-    if(hasErrors(A, L, U, P, success, true, "random")) return 1;
+    if(hasErrors(A_init, L, U, P, success, true, "random")) return 1;
 
 
     // Diagonal matrix. 
@@ -81,9 +113,11 @@ int main() {
     for (int i = 0; i < A.rows; ++i) {
         A.at<real>(i, i) = (cv::randu<real>() - 0.5) * 100;
     }
-    success = yalal::LU(A, L, U, MatStructure::DIAGONAL);
+    A.copyTo(A_init);
+    success = yalal::LU(A_init, MatStructure::DIAGONAL);
+    RecoverLU(A, L, U);
 
-    if(hasErrors(A, L, U, P, success, false, "diagonal")) return 1;
+    if(hasErrors(A_init, L, U, P, success, false, "diagonal")) return 1;
 
     // upper triangular
     A = cv::Mat_<real>::zeros(354, 354);
@@ -93,16 +127,20 @@ int main() {
         }
     }
 
-    success = yalal::LU(A, L, U, MatStructure::UPPER_TRI);
+    A.copyTo(A_init);
+    success = yalal::LU(A, MatStructure::UPPER_TRI);
+    RecoverLU(A, L, U);
 
-    if(hasErrors(A, L, U, P, success, false, "upper triangular")) return 1;
+    if(hasErrors(A_init, L, U, P, success, false, "upper triangular")) return 1;
 
     // lower triangular
     cv::transpose(A, A);
 
-    success = yalal::LU(A, L, U, MatStructure::LOWER_TRI);
+    A.copyTo(A_init);
+    success = yalal::LU(A, MatStructure::LOWER_TRI);
+    RecoverLU(A, L, U);
 
-    if(hasErrors(A, L, U, P, success, false, "lower triangular")) return 1;
+    if(hasErrors(A_init, L, U, P, success, false, "lower triangular")) return 1;
 
     return 0;
 }
