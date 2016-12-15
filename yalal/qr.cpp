@@ -112,6 +112,11 @@ namespace yalal {
             vR = 0;
 
             for (int i1 = j; i1 < R.rows; ++i1) {
+//                cv::Mat_<real> vRng = v.rowRange(0, R.cols - j);
+//                cv::Mat_<real> Rrng = R.row(i1).colRange(j, R.cols);
+//                std::cout << vRng.rows << " " << vRng.cols << std::endl;
+//                std::cout << Rrng.rows << " " << Rrng.cols << std::endl;
+//                vR.rowRange(0, R.cols - j) += Rrng.dot(vRng.t());
                 for (int j1 = j; j1 < R.cols; ++j1) {
                     vR(j1-j) += v(i1-j) * R(i1, j1);
                 }
@@ -223,6 +228,9 @@ namespace yalal {
                 case QRMethod::GIVENS: {
                     QR_Givens(A, Q, R);
                     break;
+                }
+                default: {
+                    assert(false && "Wrong 'QR method' parameter");
                 }
             }
         }

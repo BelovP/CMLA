@@ -19,6 +19,7 @@ namespace yalal {
         };
     };
 
-    real matrixNorm(cv::Mat_<real> A, int type = 2);
+    real matrixNorm(cv::Mat_<real> A, int type = 2,
+                    int matStructure = MatStructure::ARBITRARY);
 
 };

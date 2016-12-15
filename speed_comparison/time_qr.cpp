@@ -3,7 +3,7 @@
 #include <vector>
 #include <fstream>
 
-#include "Eigen/QR"
+#include <Eigen/QR>
 #include <opencv2/core/eigen.hpp>
 
 #include <armadillo>
@@ -19,7 +19,7 @@ int main() {
 
     std::vector<int> sizes = {5, 50, 100, 250, 450, 700, 900, 1200, 1400, 1600, 1800};
     const int k = sizes.size();
-    std::vector<float> timeYalalMGS(k), timeYalalHouseholder(k), 
+    std::vector<float> timeYalalMGS(k), timeYalalHouseholder(k),
             timeYalalGivens(k), timeEigen(k), timeArma(k);
 
     Time start_global = Clock::now(), end_global = Clock::now();
@@ -40,7 +40,7 @@ int main() {
 
         for (int j = 0; j < numRepeats; ++j) {
             Time start = Clock::now();
-            yalal::QR(mats[j], Q, R, 
+            yalal::QR(mats[j], Q, R,
                       yalal::MatStructure::ARBITRARY, yalal::QRMethod::GS_MODIFIED);
             Time end = Clock::now();
             timeYalalMGS[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
