@@ -12,9 +12,13 @@ int main(int argc, char* argv[]) {
     std::cout.precision(7);
     std::cout << std::fixed;
 
+    std::vector<const char*> cholTypes =
+            {"outer product Cholesky"}; //, "Cholesky-Banachiewicz", "Cholesky-Crout"};
+
     std::vector<const char*> matTypes =
             {"random", "random", "diagonal", "diagonal (treated as arbitrary)",
              "Hilbert", "tridiagonal"};
+    
     std::vector<MatStructure> matTypeFlags =
             {MatStructure::ARBITRARY, MatStructure::ARBITRARY, MatStructure::DIAGONAL,
              MatStructure::ARBITRARY, MatStructure::ARBITRARY, MatStructure::TRIDIAGONAL};
@@ -64,48 +68,58 @@ int main(int argc, char* argv[]) {
 
     cv::Mat_<real> L;
 
-    for (int matType = 0; matType < matTypes.size(); ++matType) {
-
-        Time start = Clock::now();
-
-        Cholesky(mats[matType], L, matTypeFlags[matType]);
-
-        Time end = Clock::now();
-        int duration = std::chrono::duration_cast<Microseconds>(end - start).count() / 1000;
-
-        real error = cv::norm(L * L.t() - mats[matType], cv::NORM_L2);
-
+    for (int cholType = 0; cholType < cholTypes.size(); ++cholType) {
         if (verbose) {
-            std::cout << "||LL* - A|| = " << error << ",\t"
-            << duration << " ms"
-            << ",\t" << mats[matType].rows << " x " << mats[matType].cols
-            << " " << matTypes[matType]
-            << std::endl;
+            std::cout << "*** " << cholTypes[cholType] << " ***" << std::endl;
         }
 
-        if (error > 5e-3) {
-            std::cout <<
-            "Wrong result for Cholesky at " <<
-            mats[matType].rows << " x " << mats[matType].cols <<
-            " " << matTypes[matType] << " matrix: ||LL*-A|| = " <<
-            error << std::endl;
-            return 1;
-        }
+        for (int matType = 0; matType < matTypes.size(); ++matType) {
 
-        real upperTriangleMax = 0;
-        for (int i = 0; i < L.rows; ++i) {
-            for (int j = i + 1; j < L.cols; ++j) {
-                upperTriangleMax = std::max(upperTriangleMax, std::abs(L(i, j)));
+            Time start = Clock::now();
+
+            Cholesky(mats[matType], L, matTypeFlags[matType], cholType);
+
+            Time end = Clock::now();
+            int duration = std::chrono::duration_cast<Microseconds>(end - start).count() / 1000;
+
+            real error = cv::norm(L * L.t() - mats[matType], cv::NORM_L2);
+
+            if (verbose) {
+                std::cout << "||LL* - A|| = " << error << ",\t"
+                << duration << " ms"
+                << ",\t" << mats[matType].rows << " x " << mats[matType].cols
+                << " " << matTypes[matType]
+                << std::endl;
+            }
+
+            if (error > 5e-3) {
+                std::cout <<
+                "Wrong result for Cholesky at " <<
+                mats[matType].rows << " x " << mats[matType].cols <<
+                " " << matTypes[matType] << " matrix: ||LL*-A|| = " <<
+                error << std::endl;
+                return 1;
+            }
+
+            real upperTriangleMax = 0;
+            for (int i = 0; i < L.rows; ++i) {
+                for (int j = i + 1; j < L.cols; ++j) {
+                    upperTriangleMax = std::max(upperTriangleMax, std::abs(L(i, j)));
+                }
+            }
+
+            if (upperTriangleMax > 4e-5) {
+                std::cout <<
+                "Wrong result for " << cholTypes[cholType] << " at " <<
+                mats[matType].rows << " x " << mats[matType].cols <<
+                " " << matTypes[matType] << " matrix: L is not triangular"
+                        " enough (" << upperTriangleMax << ")" << std::endl;
+                return 1;
             }
         }
 
-        if (upperTriangleMax > 4e-5) {
-            std::cout <<
-            "Wrong result for Cholesky at " <<
-            mats[matType].rows << " x " << mats[matType].cols <<
-            " " << matTypes[matType] << " matrix: L is not triangular"
-                    " enough (" << upperTriangleMax << ")" << std::endl;
-            return 1;
+        if (verbose) {
+            std::cout << std::endl;
         }
     }
 
