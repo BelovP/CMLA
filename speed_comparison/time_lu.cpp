@@ -65,7 +65,7 @@ int main() {
             cv::cv2eigen(mats[j], A_Eig);
 
             Time start = Clock::now();
-            Eigen::PartialPivLU<Eigen::MatrixXf>::PartialPivLU lu(A_Eig);
+            Eigen::PartialPivLU<Eigen::MatrixXf> lu(A_Eig);
             //Eigen::HouseholderQR<Eigen::MatrixXf> qr(A);
             L_Eig = lu.matrixLU();
             U_Eig = lu.matrixLU();

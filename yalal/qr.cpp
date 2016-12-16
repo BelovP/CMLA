@@ -156,7 +156,6 @@ namespace yalal {
         Q = cv::Mat_<real>::eye(A.rows, A.rows);
         A.copyTo(R);
 
-
         for (int j = 0; j < A.cols; ++j) {
             for (int i = A.rows - 1; i > j; --i) {
 
@@ -187,6 +186,155 @@ namespace yalal {
                         x_j_new = Q(i-1,k) * sin_a + Q(i,k) * cos_a;
                         Q(i-1,k) = x_i_new;
                         Q(i  ,k) = x_j_new;
+                    }
+                }
+            }
+        }
+
+        cv::transpose(Q, Q);
+    }
+
+    void QR_Givens_parallel(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
+        // it's actually Q*, will be transposed back at the end of the function
+        Q = cv::Mat_<real>::eye(A.rows, A.rows);
+        A.copyTo(R);
+
+        for (int j = 0; j < A.cols; ++j) {
+
+            if (A.rows - j > 9) {
+
+//                if (j <= 100) std::cout << R.col(j) << std::endl << std::endl;
+
+                std::vector<int> borders(omp_get_max_threads() + 1);
+                for (int rank = 0; rank < borders.size(); ++rank) {
+                    int start = rank * (R.rows - j - 1) / omp_get_max_threads();
+                    int end = (rank + 1) * (R.rows - j - 1) / omp_get_max_threads();
+
+                    borders[rank] = start;
+                    borders[rank + 1] = end;
+                }
+
+//            if (j == 0) {
+//                std::cout << omp_get_max_threads() << std::endl;
+//                for (auto x : borders) {
+//                    std::cout << x << " ";
+//                }
+//                std::cout << std::endl;
+//            }
+
+                #pragma omp parallel
+                {
+                    int nth = omp_get_num_threads();
+                    int ith = omp_get_thread_num();
+                    
+                    for (int i = A.rows - 1 - borders[ith]; i > A.rows - 1 - borders[ith+1]; --i) {
+                        real x_i, x_j, coeff, cos_a, sin_a, x_i_new, x_j_new;
+
+                        if (std::abs(R(i, j)) > 5e-7) {
+                            // If the element is zero, then there's no need to rotate
+                            // Otherwise:
+
+                            // Prepare the rotation
+                            x_i = R(i - 1, j);
+                            x_j = R(i, j);
+
+                            coeff = real(1.) / std::sqrt(x_i * x_i + x_j * x_j);
+                            cos_a = x_i * coeff;
+                            sin_a = -x_j * coeff;
+
+                            // Rotate rows
+                            for (int k = j; k < R.cols; ++k) {
+                                x_i_new = R(i - 1, k) * cos_a - R(i, k) * sin_a;
+                                x_j_new = R(i - 1, k) * sin_a + R(i, k) * cos_a;
+                                R(i - 1, k) = x_i_new;
+                                R(i, k) = x_j_new;
+                            }
+
+                            // Rotate rows of Q
+                            for (int k = 0; k < Q.cols; ++k) {
+                                x_i_new = Q(i - 1, k) * cos_a - Q(i, k) * sin_a;
+                                x_j_new = Q(i - 1, k) * sin_a + Q(i, k) * cos_a;
+                                Q(i - 1, k) = x_i_new;
+                                Q(i, k) = x_j_new;
+                            }
+                        }
+                    }
+                }
+
+//                if (j <= 100) std::cout << R.col(j) << std::endl << std::endl;
+
+                for (int q = 1; q < borders.size() - 1; ++q) {
+                    
+                    int i = A.rows - 1 - borders[q];
+                    int iNext = (q == borders.size() - 1 ? i-1 : A.rows - 1 - borders[q+1]);
+//                    printf("%d <-> %d\n", i, iNext);
+                    
+                    real x_i, x_j, coeff, cos_a, sin_a, x_i_new, x_j_new;
+
+                    if (std::abs(R(i, j)) > 5e-7) {
+                        // If the element is zero, then there's no need to rotate
+                        // Otherwise:
+
+                        // Prepare the rotation
+                        x_i = R(iNext, j);
+                        x_j = R(i, j);
+
+                        coeff = real(1.) / std::sqrt(x_i * x_i + x_j * x_j);
+                        cos_a = x_i * coeff;
+                        sin_a = -x_j * coeff;
+
+                        // Rotate rows
+                        for (int k = j; k < R.cols; ++k) {
+                            x_i_new = R(iNext, k) * cos_a - R(i, k) * sin_a;
+                            x_j_new = R(iNext, k) * sin_a + R(i, k) * cos_a;
+                            R(iNext, k) = x_i_new;
+                            R(i, k) = x_j_new;
+                        }
+
+                        // Rotate rows of Q
+                        for (int k = 0; k < Q.cols; ++k) {
+                            x_i_new = Q(iNext, k) * cos_a - Q(i, k) * sin_a;
+                            x_j_new = Q(iNext, k) * sin_a + Q(i, k) * cos_a;
+                            Q(iNext, k) = x_i_new;
+                            Q(i, k) = x_j_new;
+                        }
+                    }
+                }
+
+//                if (j <= 100) std::cout << R.col(j) << std::endl << std::endl;
+
+            } else {
+
+                for (int i = A.rows - 1; i > j; --i) {
+
+                    // If the element is zero, then there's no need to rotate
+                    // Otherwise:
+                    real x_i, x_j, coeff, cos_a, sin_a, x_i_new, x_j_new;
+
+                    if (std::abs(R(i, j)) > 5e-7) {
+                        // Prepare the rotation
+                        x_i = R(i - 1, j);
+                        x_j = R(i, j);
+
+                        coeff = real(1.) / std::sqrt(x_i * x_i + x_j * x_j);
+                        cos_a = x_i * coeff;
+                        sin_a = -x_j * coeff;
+
+                        // Rotate rows
+                        for (int k = j; k < R.cols; ++k) {
+                            x_i_new = R(i - 1, k) * cos_a - R(i, k) * sin_a;
+                            x_j_new = R(i - 1, k) * sin_a + R(i, k) * cos_a;
+                            R(i - 1, k) = x_i_new;
+                            R(i, k) = x_j_new;
+                        }
+
+                        // Rotate rows of Q
+                        for (int k = 0; k < Q.cols; ++k) {
+                            x_i_new = Q(i - 1, k) * cos_a - Q(i, k) * sin_a;
+                            x_j_new = Q(i - 1, k) * sin_a + Q(i, k) * cos_a;
+                            Q(i - 1, k) = x_i_new;
+                            Q(i, k) = x_j_new;
+                        }
                     }
                 }
             }
@@ -229,7 +377,7 @@ namespace yalal {
                     break;
                 }
                 case QRMethod::GIVENS: {
-                    QR_Givens(A, Q, R);
+                    QR_Givens_parallel(A, Q, R);
                     break;
                 }
                 default: {

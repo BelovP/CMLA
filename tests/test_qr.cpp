@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
     std::vector<cv::Mat_<real>> mats(matTypes.size());
 
     // random
-    mats[0].create(233, 199);
+    mats[0].create(60, 60);
     cv::randu(mats[0], -1., 1.);
 
     // diagonal
@@ -89,12 +89,12 @@ int main(int argc, char* argv[]) {
 
     cv::Mat_<real> Q, R;
 
-    for (int qrType = 0; qrType < qrTypes.size(); ++qrType) {
+    for (int qrType = yalal::QRMethod::GIVENS; qrType < qrTypes.size(); ++qrType) {
         if (verbose) {
             std::cout << "*** " << qrTypes[qrType] << " ***" << std::endl;
         }
 
-        for (int matType = 0; matType < matTypes.size(); ++matType) {
+        for (int matType = 0; matType < 1/*matTypes.size()*/; ++matType) {
 
             Time start = Clock::now();
 
