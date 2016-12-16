@@ -68,11 +68,16 @@ int main() {
     cv::randu(A, 10., 20.);
 
     A.copyTo(A_init);
-    success = yalal::LU(A, MatStructure::ARBITRARY);
-    yalal::RecoverLU(A, L, U);
+    success = yalal::LU(A_init, MatStructure::ARBITRARY);
+    yalal::RecoverLU(A_init, L, U);
 
-    if(hasErrors(A_init, L, U, P, success, false, "random")) return 1; 
+    if(hasErrors(A, L, U, P, success, false, "random")) return 1; 
 
+    A.copyTo(A_init);
+    success = yalal::LU_mt(A_init, MatStructure::ARBITRARY);
+    yalal::RecoverLU(A_init, L, U);
+
+    if(hasErrors(A, L, U, P, success, false, "random_mt")) return 1; 
 
     // TODO investigate
     // Random matrix. Decompose with pivoting.

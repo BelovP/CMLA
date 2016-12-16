@@ -14,4 +14,7 @@ namespace yalal {
 
     // Decompose LU, stored in matrix A, to separate L and U matrices. 
     void RecoverLU(cv::Mat_<real>& A, cv::Mat_<real>& L, cv::Mat_<real>& U);
+
+    // LU algorithm with OpenMP multithreading.
+    bool LU_mt(cv::Mat_<real> A, int matStructure);
 }

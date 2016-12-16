@@ -110,7 +110,7 @@ namespace yalal {
 
 	// LU algorithm without pivoting. 
     bool LU(cv::Mat_<real> A,
-               int matStructure) {
+            int matStructure) {
     	cv::Mat_<real> P;
     	return LU_internal(A, P, matStructure, false);
     }
@@ -118,6 +118,39 @@ namespace yalal {
     // LU algorithm with partial pivoting. PA = LU
     bool LU(cv::Mat_<real> A, cv::Mat_<real> & P, int matStructure) {
     	return LU_internal(A, P, matStructure, true);
+    }
+
+    bool LU_mt(cv::Mat_<real> A, int matStructure) {
+        assert(A.rows && A.rows == A.cols); 
+        auto n = A.rows;
+
+        vector<real> A_lined(n * n);
+        int it = 0;
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                A_lined[it++] = A(i, j);
+            }
+        } 
+
+        for(int col = 0; col < n; ++col) { 
+            int i;
+
+            //#pragma omp parallel for private(i) shared(A_lined)
+            for(i = col + 1; i < n; ++i){
+                real diag_mul = A_lined[i * n + col] / A_lined[col * n + col];
+                int j;
+                for(j = col + 1; j < n; ++j){ 
+                    A_lined[i * n + j] = A_lined[i * n + j] - diag_mul * A_lined[col * n + j];
+                }
+                A_lined[i * n + col] = diag_mul;
+            }
+        }
+        it = 0;
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                A(i, j) = A_lined[it++];
+            }
+        } 
     }
 
     void RecoverLU(cv::Mat_<real>& A, cv::Mat_<real>& L, cv::Mat_<real>& U) {
