@@ -77,13 +77,13 @@ int main() {
     std::vector<cv::Mat_<real>> mats(matTypes.size());
 
     // random
-    mats[0].create(50, 50);
+    mats[0].create(233, 233);
     cv::randu(mats[0], -1., 1.);
 
 //    mats[0] = (cv::Mat_<real>(3,3) << 3,2,1,8,1,8,0,3,3);
 
     // diagonal
-    mats[1] = cv::Mat_<real>::zeros(50, 50);
+    mats[1] = cv::Mat_<real>::zeros(133, 133);
     for (int i = 0; i < mats[1].rows; ++i) {
         mats[1](i, i) = 1;//(cv::randu<real>() - 0.5) * 100;
     }
@@ -119,7 +119,7 @@ int main() {
     }
 
     rand(); rand();
-    const int sparseMatSize = 2;
+    const int sparseMatSize = 129;
     mats[7] = cv::Mat_<real>::zeros(sparseMatSize, sparseMatSize);
     std::vector<int> permutation(sparseMatSize);
     for (int i = 0; i < sparseMatSize; ++i) {
@@ -131,8 +131,6 @@ int main() {
         mats[7](i, rand() % sparseMatSize) += (cv::randu<real>() - 0.5) * 4;
         mats[7](i, rand() % sparseMatSize) += (cv::randu<real>() - 0.5) * 4;
     }
-
-    std::cout << mats[7] << std::endl;
 
     // Test spectral norm
     for (int i = 0; i < mats.size(); ++i) {

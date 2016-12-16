@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <omp.h>
+
 #include "qr.hpp"
 #include "norms.hpp"
 
@@ -153,6 +155,7 @@ namespace yalal {
         // it's actually Q*, will be transposed back at the end of the function
         Q = cv::Mat_<real>::eye(A.rows, A.rows);
         A.copyTo(R);
+
 
         for (int j = 0; j < A.cols; ++j) {
             for (int i = A.rows - 1; i > j; --i) {

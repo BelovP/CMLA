@@ -29,7 +29,7 @@ int main() {
                 std::chrono::duration_cast<Seconds>(end_global - start_global).count() << " sec" << std::endl;
         start_global = Clock::now();
 
-        const int numRepeats = 5;
+        const int numRepeats = 3;
         std::vector<cv::Mat_<real>> mats(numRepeats);
         cv::Mat_<real> Q(sizes[i], sizes[i]), R(sizes[i], sizes[i]);
 
@@ -38,23 +38,23 @@ int main() {
             cv::randu(mats[j], -1., 1.);
         }
 
-        for (int j = 0; j < numRepeats; ++j) {
-            Time start = Clock::now();
-            yalal::QR(mats[j], Q, R,
-                      yalal::MatStructure::ARBITRARY, yalal::QRMethod::GS_MODIFIED);
-            Time end = Clock::now();
-            timeYalalMGS[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
-        }
-        timeYalalMGS[i] /= numRepeats;
-
-        for (int j = 0; j < numRepeats; ++j) {
-            Time start = Clock::now();
-            yalal::QR(mats[j], Q, R,
-                      yalal::MatStructure::ARBITRARY, yalal::QRMethod::HOUSEHOLDER);
-            Time end = Clock::now();
-            timeYalalHouseholder[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
-        }
-        timeYalalHouseholder[i] /= numRepeats;
+//        for (int j = 0; j < numRepeats; ++j) {
+//            Time start = Clock::now();
+//            yalal::QR(mats[j], Q, R,
+//                      yalal::MatStructure::ARBITRARY, yalal::QRMethod::GS_MODIFIED);
+//            Time end = Clock::now();
+//            timeYalalMGS[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
+//        }
+//        timeYalalMGS[i] /= numRepeats;
+//
+//        for (int j = 0; j < numRepeats; ++j) {
+//            Time start = Clock::now();
+//            yalal::QR(mats[j], Q, R,
+//                      yalal::MatStructure::ARBITRARY, yalal::QRMethod::HOUSEHOLDER);
+//            Time end = Clock::now();
+//            timeYalalHouseholder[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
+//        }
+//        timeYalalHouseholder[i] /= numRepeats;
 
         for (int j = 0; j < numRepeats; ++j) {
             Time start = Clock::now();
@@ -80,26 +80,26 @@ int main() {
         }
         timeEigen[i] /= numRepeats;
 
-        arma::Mat<real> A_Arma, Q_Arma, R_Arma;
-
-        for (int j = 0; j < numRepeats; ++j) {
-            cv::Mat_<real> transposed;
-            cv::transpose(mats[j], transposed);
-            A_Arma = arma::Mat<real>(
-                    reinterpret_cast<real*>(transposed.data), transposed.rows, transposed.cols);
-
-            Time start = Clock::now();
-            arma::qr(Q_Arma, R_Arma, A_Arma);
-            Time end = Clock::now();
-
-            timeArma[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
-        }
-        timeArma[i] /= numRepeats;
+//        arma::Mat<real> A_Arma, Q_Arma, R_Arma;
+//
+//        for (int j = 0; j < numRepeats; ++j) {
+//            cv::Mat_<real> transposed;
+//            cv::transpose(mats[j], transposed);
+//            A_Arma = arma::Mat<real>(
+//                    reinterpret_cast<real*>(transposed.data), transposed.rows, transposed.cols);
+//
+//            Time start = Clock::now();
+//            arma::qr(Q_Arma, R_Arma, A_Arma);
+//            Time end = Clock::now();
+//
+//            timeArma[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
+//        }
+//        timeArma[i] /= numRepeats;
 
         end_global = Clock::now();
     }
 
-    std::ofstream out("time_qr.txt");
+    std::ofstream out("time_qr_parallel_givens.txt");
     
     out << "n = [";
     for (int i = 0; i < k - 1; ++i) {

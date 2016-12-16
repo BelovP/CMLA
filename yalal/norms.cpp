@@ -22,20 +22,34 @@ namespace yalal {
      Возвращает false, если вектор "а" уже приведен к этому виду
     */
 
-    bool householderAux(cv::Mat_<real> & a, cv::Mat_<real> & e) {
+    real householderAux(cv::Mat_<real> & a, cv::Mat_<real> & e) {
 
-        if (vectorNorm(a, VectorNorm::L2_SQUARED) == a(0) * a(0)) {
-            return false;
-        } else {
-            a.copyTo(e);
-            real sign = (a(0) > 0 ? real(1.0) : real(-1.0));
-            if (a(0) == 0) {
-                sign = 0;
-            }
-            e(0) += sign * vectorNorm(a);
-            e /= vectorNorm(e);
-            return true;
+        real tailNormSqr = 0;
+        for (int k = 1; k < a.total(); ++k) {
+            tailNormSqr += a(k) * a(k);
         }
+
+        a.copyTo(e);
+        e(0) = real(1.);
+
+        real nonzero;
+
+        if (tailNormSqr < 1e-6) {
+            nonzero = 0;
+            e /= real(M_SQRT2);
+        } else {
+            real norm = std::sqrt(a(0) * a(0) + tailNormSqr);
+            if (a(0) <= 0) {
+                e(0) = a(0) - norm;
+            } else {
+                e(0) = - tailNormSqr / (a(0) + norm);
+            }
+
+            nonzero = real(2) * e(0) * e(0) / (tailNormSqr + e(0) * e(0));
+            e /= real(M_SQRT2) * e(0);
+        }
+
+        return nonzero;
     }
 
     /*
@@ -74,7 +88,7 @@ namespace yalal {
         // Householder for columns
         for (int i = 0; i < B.cols; ++i) {
             cv::Mat_<real> a = B.rowRange(i, B.rows).col(i);
-            bool nonzero = householderAux(a, v);
+            real nonzero = householderAux(a, v);
 
             Q = 0;
             for (int k = 0; k < Q.rows; ++k) {
@@ -82,10 +96,10 @@ namespace yalal {
             }
 
             cv::Mat_<real> Qsub = Q.rowRange(i, Q.rows).colRange(i, Q.cols);
-            if (nonzero) {
+            if (std::abs(nonzero) > 1e-6) {
                 for (int i1 = 0; i1 < a.total(); ++i1) {
                     for (int j1 = 0; j1 < a.total(); ++j1) {
-                        Qsub(i1, j1) -= real(2.) * v(i1) * v(j1);
+                        Qsub(i1, j1) -= real(2.) * nonzero * v(i1) * v(j1);
                     }
                 }
             }
@@ -106,10 +120,10 @@ namespace yalal {
 
                 // TODO optimize for Q
                 Qsub = Q.rowRange(i+1, Q.rows).colRange(i+1, Q.cols);
-                if (nonzero) {
+                if (std::abs(nonzero) > 1e-6) {
                     for (int i1 = 0; i1 < a.total(); ++i1) {
                         for (int j1 = 0; j1 < a.total(); ++j1) {
-                            Qsub(i1, j1) -= real(2.) * v(i1) * v(j1);
+                            Qsub(i1, j1) -= real(2.) * nonzero * v(i1) * v(j1);
                         }
                     }
                 }
@@ -270,9 +284,19 @@ namespace yalal {
             case MatrixNorm::FROBENIUS:
             case MatrixNorm::FROBENIUS_SQUARED: {
                 real retval = 0;
-                for (auto & x : A) {
-                    // should be more precise if parallelized
-                    retval += x * x;
+
+                if (matStructure == MatStructure::UPPER_BIDIAG) {
+                    int kLimit = std::min(A.rows, A.cols);
+                    for (int k = 0; k < std::min(A.rows, A.cols) - 1; ++k) {
+                        retval += A(k,k) * A(k,k);
+                        retval += A(k,k+1) * A(k,k+1);
+                    }
+                    retval += A(kLimit, kLimit) * A(kLimit, kLimit);
+                } else {
+                    for (auto & x : A) {
+                        // should be more precise if parallelized
+                        retval += x * x;
+                    }
                 }
                 return (type == MatrixNorm::FROBENIUS ? std::sqrt(retval) : retval);
             }
@@ -288,8 +312,11 @@ namespace yalal {
             case 2: {
                 cv::Mat_<real> B; // bidiagonal
                 twoSideHouseholder(A, B);
-//                std::cout << B << std::endl;
-                return truncSVDForMaxSingularValue(B, 0., 20., 1e-5);
+                return truncSVDForMaxSingularValue(
+                        B, 0,
+                        // Frobenius norm is an upper bound for the max singular value
+                        matrixNorm(B, MatrixNorm::FROBENIUS, MatStructure::UPPER_BIDIAG),
+                        1e-5);
             }
 
             default: {
