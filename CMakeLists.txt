@@ -16,7 +16,7 @@ else()
 endif()
 
 set(PACKAGES
-        norms qr lu cholesky)
+        norms qr lu cholesky algorithms)
 
 add_subdirectory(yalal)
 add_subdirectory(speed_comparison)

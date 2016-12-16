@@ -119,4 +119,31 @@ namespace yalal {
     bool LU(cv::Mat_<real> A, cv::Mat_<real> & P, int matStructure) {
     	return LU_internal(A, P, matStructure, true);
     }
+
+    void RecoverLU(cv::Mat_<real>& A, cv::Mat_<real>& L, cv::Mat_<real>& U) {
+        int n = A.rows;
+        L.create(n, n);
+        U.create(n, n);
+
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                L(i, j) = 0;
+                U(i, j) = 0;
+            }
+        }
+
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (j < i) {
+                    L(i, j) = A(i, j);
+                }
+                else {
+                    U(i, j) = A(i, j);
+                }
+                if (j == i) {
+                    L(i, j) = 1;
+                }
+            }
+        }
+    }
 }
