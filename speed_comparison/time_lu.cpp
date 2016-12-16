@@ -18,7 +18,7 @@ typedef Clock::time_point Time;
 
 int main() {
 
-    std::vector<int> sizes = {5, 50, 100, 250, 450, 700, 900};//, 1200, 1400, 1600, 1800};
+    std::vector<int> sizes = {5, 50, 100, 250, 450, 700, 900, 980};//, 1200, 1400, 1600, 1800};
     const int k = sizes.size();
     std::vector<float> timeYalalLu(k), timeYalalLuPivoting(k), 
             timeYalalCholeskyOuter(k), timeYalalCholeskyBanachiewicz(k), timeYalalCholeskyCrout(k), timeEigen(k), timeArma(k);
@@ -30,7 +30,7 @@ int main() {
                 std::chrono::duration_cast<Seconds>(end_global - start_global).count() << " sec" << std::endl;
         start_global = Clock::now();
 
-        const int numRepeats = 5;
+        const int numRepeats = 3;
         std::vector<cv::Mat_<real>> mats(numRepeats);
         cv::Mat_<real> A(sizes[i], sizes[i]), L(sizes[i], sizes[i]), U(sizes[i], sizes[i]), P(sizes[i], sizes[i]);
 
@@ -42,8 +42,7 @@ int main() {
         for (int j = 0; j < numRepeats; ++j) {
             mats[j].copyTo(A);
             Time start = Clock::now();
-            yalal::LU(A,  
-                      yalal::MatStructure::ARBITRARY);
+            yalal::LU_mt(A, yalal::MatStructure::ARBITRARY);
             Time end = Clock::now();
             timeYalalLu[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
         }
@@ -52,7 +51,7 @@ int main() {
         for (int j = 0; j < numRepeats; ++j) {
             mats[j].copyTo(A);
             Time start = Clock::now();
-            yalal::LU(A, P, 
+            yalal::LU(A,
                       yalal::MatStructure::ARBITRARY);
             Time end = Clock::now();
             timeYalalLuPivoting[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
@@ -77,7 +76,7 @@ int main() {
 
         timeEigen[i] /= numRepeats;
 
-        /*arma::Mat<real> A_Arma, Q_Arma, R_Arma;
+        arma::Mat<real> A_Arma, L_Arma, U_Arma;
 
         for (int j = 0; j < numRepeats; ++j) {
             cv::Mat_<real> transposed;
@@ -86,17 +85,17 @@ int main() {
                     reinterpret_cast<real*>(transposed.data), transposed.rows, transposed.cols);
 
             Time start = Clock::now();
-            arma::qr(Q_Arma, R_Arma, A_Arma);
+            arma::lu(L_Arma, U_Arma, A_Arma);
             Time end = Clock::now();
 
             timeArma[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
         }
-        timeArma[i] /= numRepeats; */
+        timeArma[i] /= numRepeats;
 
         end_global = Clock::now();
     }
 
-    std::ofstream out("time_lu.txt");
+    std::ofstream out("time_lu_parallel.txt");
     
     out << "n = [";
     for (int i = 0; i < k - 1; ++i) {
@@ -104,17 +103,17 @@ int main() {
     }
     out << sizes[k-1] << "]" << std::endl;
 
-    out << "timeYalalLu = [";
-    for (int i = 0; i < k - 1; ++i) {
-        out << timeYalalLu[i] << ",";
-    }
-    out << timeYalalLu[k-1] << "]" << std::endl;
-
-    out << "timeYalalLuPivoting = [";
-    for (int i = 0; i < k - 1; ++i) {
-        out << timeYalalLuPivoting[i] << ",";
-    }
-    out << timeYalalLuPivoting[k-1] << "]" << std::endl;
+//    out << "timeYalalLu = [";
+//    for (int i = 0; i < k - 1; ++i) {
+//        out << timeYalalLu[i] << ",";
+//    }
+//    out << timeYalalLu[k-1] << "]" << std::endl;
+//
+//    out << "timeYalalLuPivoting = [";
+//    for (int i = 0; i < k - 1; ++i) {
+//        out << timeYalalLuPivoting[i] << ",";
+//    }
+//    out << timeYalalLuPivoting[k-1] << "]" << std::endl;
 
     /*out << "timeYalalCholeskyOuter = [";
     for (int i = 0; i < k - 1; ++i) {
@@ -140,11 +139,11 @@ int main() {
     }
     out << timeEigen[k-1] << "]" << std::endl;
 
-    /*out << "timeArma = [";
+    out << "timeArma = [";
     for (int i = 0; i < k - 1; ++i) {
         out << timeArma[i] << ",";
     }
-    out << timeArma[k-1] << "]" << std::endl; */
+    out << timeArma[k-1] << "]" << std::endl;
     
     return 0;
 }

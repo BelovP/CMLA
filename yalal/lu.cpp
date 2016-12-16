@@ -2,6 +2,8 @@
 #include "norms.hpp"
 #include <vector>
 
+#include <omp.h>
+
 const real close_to_zero_eps = 1e-8;
 
 using std::vector;
@@ -124,7 +126,8 @@ namespace yalal {
         assert(A.rows && A.rows == A.cols); 
         auto n = A.rows;
 
-        vector<real> A_lined(n * n);
+        //vector<real> A_lined(n * n);
+        real A_lined[n * n];
         int it = 0;
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < n; ++j) {
@@ -135,7 +138,7 @@ namespace yalal {
         for(int col = 0; col < n; ++col) { 
             int i;
 
-            //#pragma omp parallel for private(i) shared(A_lined)
+            #pragma omp parallel for private(i) shared(A_lined)
             for(i = col + 1; i < n; ++i){
                 real diag_mul = A_lined[i * n + col] / A_lined[col * n + col];
                 int j;
