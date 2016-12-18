@@ -77,7 +77,7 @@ int main() {
     std::vector<cv::Mat_<real>> mats(matTypes.size());
 
     // random
-    mats[0].create(233, 233);
+    mats[0].create(405, 405);
     cv::randu(mats[0], -1., 1.);
 
 //    mats[0] = (cv::Mat_<real>(3,3) << 3,2,1,8,1,8,0,3,3);

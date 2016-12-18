@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "Eigen/LU"
+#include "Eigen/Cholesky"
 #include <opencv2/core/eigen.hpp>
 
 #include <armadillo>
@@ -64,11 +65,12 @@ int main() {
             cv::cv2eigen(mats[j], A_Eig);
 
             Time start = Clock::now();
-            Eigen::PartialPivLU<Eigen::MatrixXf> lu(A_Eig);
+//            Eigen::
+//            Eigen::PartialPivLU<Eigen::MatrixXf> lu(A_Eig);
             //Eigen::HouseholderQR<Eigen::MatrixXf> qr(A);
-            L_Eig = lu.matrixLU();
-            U_Eig = lu.matrixLU();
-            P_Eig = lu.permutationP();
+//            L_Eig = lu.matrixLU();
+//            U_Eig = lu.matrixLU();
+//            P_Eig = lu.permutationP();
             Time end = Clock::now();
 
             timeEigen[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
@@ -85,7 +87,7 @@ int main() {
                     reinterpret_cast<real*>(transposed.data), transposed.rows, transposed.cols);
 
             Time start = Clock::now();
-            arma::lu(L_Arma, U_Arma, A_Arma);
+            arma::chol(A_Arma, L_Arma);
             Time end = Clock::now();
 
             timeArma[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
@@ -95,7 +97,7 @@ int main() {
         end_global = Clock::now();
     }
 
-    std::ofstream out("time_lu_parallel.txt");
+    std::ofstream out("time_chol.txt");
     
     out << "n = [";
     for (int i = 0; i < k - 1; ++i) {
@@ -115,13 +117,13 @@ int main() {
 //    }
 //    out << timeYalalLuPivoting[k-1] << "]" << std::endl;
 
-    /*out << "timeYalalCholeskyOuter = [";
+    out << "timeYalalCholeskyOuter = [";
     for (int i = 0; i < k - 1; ++i) {
         out << timeYalalCholeskyOuter[i] << ",";
     }
     out << timeYalalCholeskyOuter[k-1] << "]" << std::endl;
 
-    out << "timeYalalCholeskyBanachiewicz = [";
+    /*out << "timeYalalCholeskyBanachiewicz = [";
     for (int i = 0; i < k - 1; ++i) {
         out << timeYalalCholeskyBanachiewicz[i] << ",";
     }

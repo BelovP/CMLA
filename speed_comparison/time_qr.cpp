@@ -17,7 +17,7 @@ typedef Clock::time_point Time;
 
 int main() {
 
-    std::vector<int> sizes = {5, 50, 100, 250, 450, 700, 900, 1200, 1400, 1600, 1800};
+    std::vector<int> sizes = {5, 50, 100, 250, 450, 700, 900, 1200, 1400, 1600};
     const int k = sizes.size();
     std::vector<float> timeYalalMGS(k), timeYalalHouseholder(k),
             timeYalalGivens(k), timeEigen(k), timeArma(k);
@@ -32,10 +32,24 @@ int main() {
         const int numRepeats = 3;
         std::vector<cv::Mat_<real>> mats(numRepeats);
         cv::Mat_<real> Q(sizes[i], sizes[i]), R(sizes[i], sizes[i]);
+//
+//        for (int j = 0; j < numRepeats; ++j) {
+//            mats[j].create(sizes[i], sizes[i]);
+//            cv::randu(mats[j], -1., 1.);
+//        }
 
         for (int j = 0; j < numRepeats; ++j) {
-            mats[j].create(sizes[i], sizes[i]);
-            cv::randu(mats[j], -1., 1.);
+            // upper triangular
+            mats[j] = cv::Mat_<real>::zeros(sizes[i], sizes[i]);
+            for (int i = 0; i < mats[j].rows; ++i) {
+                for (int p = i; p < mats[j].cols; ++p) {
+                    mats[j](i, p) = (cv::randu<real>() - 0.5) * 2.;
+                }
+            }
+
+            for (int i = 0; i < mats[j].rows - 5; ++i) {
+                mats[j](i+1, i) = (cv::randu<real>() - 0.5) * 2.;
+            }
         }
 
 //        for (int j = 0; j < numRepeats; ++j) {
@@ -80,26 +94,26 @@ int main() {
         }
         timeEigen[i] /= numRepeats;
 
-//        arma::Mat<real> A_Arma, Q_Arma, R_Arma;
-//
-//        for (int j = 0; j < numRepeats; ++j) {
-//            cv::Mat_<real> transposed;
-//            cv::transpose(mats[j], transposed);
-//            A_Arma = arma::Mat<real>(
-//                    reinterpret_cast<real*>(transposed.data), transposed.rows, transposed.cols);
-//
-//            Time start = Clock::now();
-//            arma::qr(Q_Arma, R_Arma, A_Arma);
-//            Time end = Clock::now();
-//
-//            timeArma[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
-//        }
-//        timeArma[i] /= numRepeats;
+        arma::Mat<real> A_Arma, Q_Arma, R_Arma;
+
+        for (int j = 0; j < numRepeats; ++j) {
+            cv::Mat_<real> transposed;
+            cv::transpose(mats[j], transposed);
+            A_Arma = arma::Mat<real>(
+                    reinterpret_cast<real*>(transposed.data), transposed.rows, transposed.cols);
+
+            Time start = Clock::now();
+            arma::qr(Q_Arma, R_Arma, A_Arma);
+            Time end = Clock::now();
+
+            timeArma[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
+        }
+        timeArma[i] /= numRepeats;
 
         end_global = Clock::now();
     }
 
-    std::ofstream out("time_qr_parallel_givens.txt");
+    std::ofstream out("time_qr_sparse.txt");
     
     out << "n = [";
     for (int i = 0; i < k - 1; ++i) {

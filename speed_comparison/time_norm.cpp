@@ -3,7 +3,7 @@
 #include <vector>
 #include <fstream>
 
-#include <Eigen/QR>
+#include <Eigen/SVD>
 #include <opencv2/core/eigen.hpp>
 
 #include <armadillo>
@@ -18,10 +18,9 @@ typedef Clock::time_point Time;
 
 int main() {
 
-    std::vector<int> sizes = {5, 50, 100, 250, 380, 490, 600};
+    std::vector<int> sizes = {5, 50, 100, 250, 380, 490, 600};//, 750, 930};
     const int k = sizes.size();
-    std::vector<float> timeYalalMGS(k), timeYalalHouseholder(k),
-            timeYalalGivens(k), timeEigen(k), timeArma(k);
+    std::vector<float> timeYalal(k), timeOpenCV(k), timeEigen(k), timeArma(k);
 
     Time start_global = Clock::now(), end_global = Clock::now();
 
@@ -30,7 +29,7 @@ int main() {
                 std::chrono::duration_cast<Seconds>(end_global - start_global).count() << " sec" << std::endl;
         start_global = Clock::now();
 
-        const int numRepeats = 2;
+        const int numRepeats = 3;
         std::vector<cv::Mat_<real>> mats(numRepeats);
         cv::Mat_<real> Q(sizes[i], sizes[i]), R(sizes[i], sizes[i]);
 
@@ -39,31 +38,29 @@ int main() {
             cv::randu(mats[j], -1., 1.);
         }
 
-//        for (int j = 0; j < numRepeats; ++j) {
-//            Time start = Clock::now();
-//            yalal::QR(mats[j], Q, R,
-//                      yalal::MatStructure::ARBITRARY, yalal::QRMethod::GS_MODIFIED);
-//            Time end = Clock::now();
-//            timeYalalMGS[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
-//        }
-//        timeYalalMGS[i] /= numRepeats;
-//
-//        for (int j = 0; j < numRepeats; ++j) {
-//            Time start = Clock::now();
-//            yalal::QR(mats[j], Q, R,
-//                      yalal::MatStructure::ARBITRARY, yalal::QRMethod::HOUSEHOLDER);
-//            Time end = Clock::now();
-//            timeYalalHouseholder[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
-//        }
-//        timeYalalHouseholder[i] /= numRepeats;
+        std::vector<real> answers(numRepeats);
 
         for (int j = 0; j < numRepeats; ++j) {
             Time start = Clock::now();
-            yalal::matrixNorm(mats[j]);
+            answers[j] = yalal::matrixNorm(mats[j]);
             Time end = Clock::now();
-            timeYalalGivens[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
+            timeYalal[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
         }
-        timeYalalGivens[i] /= numRepeats;
+        timeYalal[i] /= numRepeats;
+
+        for (int j = 0; j < numRepeats; ++j) {
+            
+            Time start = Clock::now();
+            cv::SVD svd(mats[j], cv::SVD::NO_UV);
+            real norm = svd.w.at<real>(0);
+            if (std::abs(norm - answers[j]) > 1e-3) {
+                std::cout << "OpenCV is wrong: " << norm << " vs " << answers[j] << std::endl;
+            }
+            Time end = Clock::now();
+
+            timeOpenCV[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
+        }
+        timeOpenCV[i] /= numRepeats;
 
         Eigen::MatrixXf A, Q_Eig, R_Eig;
 
@@ -71,7 +68,11 @@ int main() {
             cv::cv2eigen(mats[j], A);
 
             Time start = Clock::now();
-            real n = A.norm();
+            Eigen::BDCSVD<Eigen::MatrixXf> svd(A);
+            real norm = svd.singularValues()(0);
+            if (std::abs(norm - answers[j]) > 1e-3) {
+                std::cout << "Eigen is wrong: " << norm << " vs " << answers[j] << std::endl;
+            }
             Time end = Clock::now();
 
             timeEigen[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
@@ -87,7 +88,10 @@ int main() {
                     reinterpret_cast<real*>(transposed.data), transposed.rows, transposed.cols);
 
             Time start = Clock::now();
-            real n = arma::norm(A_Arma, 2);
+            real norm = arma::norm(A_Arma, 2);
+            if (std::abs(norm - answers[j]) > 1e-3) {
+                std::cout << "Armadillo is wrong" << std::endl;
+            }
             Time end = Clock::now();
 
             timeArma[i] += std::chrono::duration_cast<Milliseconds>(end - start).count();
@@ -105,11 +109,17 @@ int main() {
     }
     out << sizes[k-1] << "]" << std::endl;
 
-    out << "timeNorm = [";
+    out << "timeYalal = [";
     for (int i = 0; i < k - 1; ++i) {
-        out << timeYalalGivens[i] << ",";
+        out << timeYalal[i] << ",";
     }
-    out << timeYalalGivens[k-1] << "]" << std::endl;
+    out << timeYalal[k-1] << "]" << std::endl;
+
+    out << "timeOpenCV = [";
+    for (int i = 0; i < k - 1; ++i) {
+        out << timeOpenCV[i] << ",";
+    }
+    out << timeOpenCV[k-1] << "]" << std::endl;
 
     out << "timeEigen = [";
     for (int i = 0; i < k - 1; ++i) {

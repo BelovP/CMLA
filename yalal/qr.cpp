@@ -377,7 +377,7 @@ namespace yalal {
                     break;
                 }
                 case QRMethod::GIVENS: {
-                    QR_Givens_parallel(A, Q, R);
+                    QR_Givens(A, Q, R);
                     break;
                 }
                 default: {

@@ -24,12 +24,13 @@ namespace yalal {
 
     real householderAux(cv::Mat_<real> & a, cv::Mat_<real> & e) {
 
+        // Assumption: e is a ROW vector, e.total() == a.total()
+
         real tailNormSqr = 0;
         for (int k = 1; k < a.total(); ++k) {
             tailNormSqr += a(k) * a(k);
+            e(k) = a(k);
         }
-
-        a.copyTo(e);
         e(0) = real(1.);
 
         real nonzero;
@@ -62,74 +63,45 @@ namespace yalal {
 
     void twoSideHouseholder(cv::Mat_<real> & A, cv::Mat_<real> & B) {
 
+        cv::Mat_<real> tmpVec, outer;
+
         if (A.rows > A.cols) {
             cv::transpose(A, B);
         } else {
             A.copyTo(B);
         }
 
-//        // U = eye(B.rows)
-//        U.create(B.rows, B.rows);
-//        U = 0;
-//        for (int k = 0; k < B.rows; ++k) {
-//            U(k,k) = real(1.);
-//        }
-//
-//        // V = eye(B.cols)
-//        V.create(B.cols, B.cols);
-//        V = 0;
-//        for (int k = 0; k < B.cols; ++k) {
-//            V(k,k) = real(1.);
-//        }
-
-        cv::Mat_<real> Q = cv::Mat_<real>::eye(B.rows, B.rows);
-        cv::Mat_<real> v(B.rows, 1);
-
         // Householder for columns
         for (int i = 0; i < B.cols; ++i) {
             cv::Mat_<real> a = B.rowRange(i, B.rows).col(i);
+            cv::Mat_<real> v(1, B.rows - i);
             real nonzero = householderAux(a, v);
 
-            Q = 0;
-            for (int k = 0; k < Q.rows; ++k) {
-                Q(k,k) = real(1.);
-            }
+            cv::Mat_<real> submatB = B.rowRange(i, B.rows).colRange(i, B.cols);
+            cv::gemm(v, submatB, 1.0, cv::noArray(), 0., tmpVec);
 
-            cv::Mat_<real> Qsub = Q.rowRange(i, Q.rows).colRange(i, Q.cols);
-            if (std::abs(nonzero) > 1e-6) {
-                for (int i1 = 0; i1 < a.total(); ++i1) {
-                    for (int j1 = 0; j1 < a.total(); ++j1) {
-                        Qsub(i1, j1) -= real(2.) * nonzero * v(i1) * v(j1);
-                    }
+            // subtract outer product
+            for (int i1 = 0; i1 < submatB.rows; ++i1) {
+                for (int j1 = 0; j1 < submatB.cols; ++j1) {
+                    submatB(i1,j1) -= 2. * nonzero * v(i1) * tmpVec(j1);
                 }
             }
-
-            cv::gemm(Q, B, 1.0, cv::noArray(), 0., B);
-//            cv::gemm(U, Q, 1.0, cv::noArray(), 0., U);
 
             // right householder for rows (almost the same as for columns)
             if (i <= B.rows - 3) {
-                int BWidth = B.cols - i;
-                Q = 0;
-                for (int k = 0; k < Q.rows; ++k) {
-                    Q(k,k) = real(1.);
-                }
-
                 a = B.row(i).colRange(i+1, B.cols);
                 nonzero = householderAux(a, v);
 
-                // TODO optimize for Q
-                Qsub = Q.rowRange(i+1, Q.rows).colRange(i+1, Q.cols);
-                if (std::abs(nonzero) > 1e-6) {
-                    for (int i1 = 0; i1 < a.total(); ++i1) {
-                        for (int j1 = 0; j1 < a.total(); ++j1) {
-                            Qsub(i1, j1) -= real(2.) * nonzero * v(i1) * v(j1);
-                        }
+                submatB = B.rowRange(i, B.rows).colRange(i+1, B.cols);
+                v = v.colRange(0, B.cols - i - 1);
+                cv::gemm(submatB, v.t(), 1.0, cv::noArray(), 0., tmpVec);
+
+                // subtract outer product
+                for (int i1 = 0; i1 < submatB.rows; ++i1) {
+                    for (int j1 = 0; j1 < submatB.cols; ++j1) {
+                        submatB(i1,j1) -= 2. * nonzero * tmpVec(i1) * v(j1);
                     }
                 }
-
-                cv::gemm(B, Q, 1.0, cv::noArray(), 0., B);
-//                cv::gemm(Q, V, 1.0, cv::noArray(), 0., V);
             }
         }
 
@@ -196,11 +168,6 @@ namespace yalal {
             real up = worklist[2];
             int n_up = worklist[3];
 
-//            for (auto x : worklist) {
-//                std::cout << x << " ";
-//            }
-//            std::cout << ", " << countSingularValuesLowerThan(B, 0.9375) << std::endl;
-
             real mid = (low + up) / real(2.);
 
             if ((up - low) < tol) {
@@ -210,7 +177,6 @@ namespace yalal {
                 break;
             } else {
                 int n_mid = countSingularValuesLowerThan(B, mid);
-//                std::cout << n_mid << std::endl;
 
                 if (n_mid > n_low) {
                     worklist[0] = low;
@@ -316,7 +282,7 @@ namespace yalal {
                         B, 0,
                         // Frobenius norm is an upper bound for the max singular value
                         matrixNorm(B, MatrixNorm::FROBENIUS, MatStructure::UPPER_BIDIAG),
-                        1e-5);
+                        1e-3);
             }
 
             default: {
