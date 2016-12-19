@@ -13,3 +13,6 @@ target_link_libraries(time_lu yalal ${ARMADILLO_LIBRARIES})
 
 add_executable(time_norm time_norm.cpp)
 target_link_libraries(time_norm yalal ${ARMADILLO_LIBRARIES})
+
+add_executable(time_cholesky time_cholesky.cpp)
+target_link_libraries(time_cholesky yalal ${ARMADILLO_LIBRARIES})

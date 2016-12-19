@@ -1,5 +1,6 @@
 #include <iostream>
 #include "algorithms.hpp"
+#include "lu.hpp"
 
 const real EPS = 1e-4;
 
@@ -26,7 +27,12 @@ int main() {
     A = cv::Mat(3, 3, CV_32F, dummy_data);
     cv::Mat_<real> f = cv::Mat(3, 1, CV_32F, dummy_constraints);
     cv::Mat_<real> real_x = cv::Mat(3, 1, CV_32F, dummy_answer);
-    cv::Mat_<real> x = yalal::SolveSystem(A, f);
+    cv::Mat_<real> L, U;
+
+    yalal::LU(A);
+    yalal::RecoverLU(A, L, U);
+
+    cv::Mat_<real> x = yalal::SolveSystem(L, U, f);
 
     real error = cv::norm(x - real_x, cv::NORM_L2);
     if (error > EPS) {
