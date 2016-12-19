@@ -36,8 +36,6 @@ namespace yalal {
             auto A_i_col = A.col(i);
             std::copy(A_i_col.begin(), A_i_col.end(), A_i.begin());
 
-            auto R_i_row = R.col(i);
-
             for (int j = 0; j < i; ++j) {
                 auto Q_j = Q.row(j);
                 real dotProduct = A_i.dot(Q_j);
@@ -65,8 +63,6 @@ namespace yalal {
 
             auto A_i_col = A.col(i);
             std::copy(A_i_col.begin(), A_i_col.end(), A_i.begin());
-
-            auto R_i_row = R.col(i);
 
             for (int j = 0; j < i; ++j) {
                 auto Q_j = Q.row(j);
@@ -97,25 +93,37 @@ namespace yalal {
         cv::Mat_<real> & vQ = vR;     // a reference with different name for convenience
 
         // Values that occur in the Householder reflector formula
-        real vNormSqr, vNorm, v0Sign, v0;
+        real vNormSqr; // ||v||^2
+        real vNorm;    // ||v||
+        real v0;       // v_0
+        real v0Sign;   // sign(v_0)
 
         for (int j = 0; j < R.cols; ++j) {
             vNormSqr = 0;
 
+            // Calculate v in Householder reflector (I - vv*)
             for (int k = j; k < R.rows; ++k) {
                 real v_i = R(k, j);
                 v(k-j) = v_i;
                 vNormSqr += v_i * v_i;
             }
 
+            // Assign values explained below for future use
             vNorm = std::sqrt(vNormSqr);
             v0Sign = (v(0) > 0 ? -1. : 1.);
             v0 = v(0);
 
+            // Apply formula for v
             v(0) -= v0Sign * vNorm;
             v /= v0Sign * std::sqrt(2. * (vNormSqr - v0Sign * vNorm * v0));
 
-            // Compute v * R[j:,j:]
+            // Now we need to compute new R. Because the left upper block of
+            // H_j is identity, it only affects R[j:,j:].
+            // That's why we get R[j:,j:] = H_j[j:,j:] * R[j:,j:] =>
+            // => R[j:,j:] = R[j:,j:] - 2 v v* R[j:,j:]
+            // To get the second term, we need to...
+
+            // 1) compute v* * R[j:,j:]
             vR = 0;
 
             for (int i1 = j; i1 < R.rows; ++i1) {
@@ -124,12 +132,18 @@ namespace yalal {
                 }
             }
 
+            // 2) compute the outer product of v and vR
+            // 3) subtract it from R[j:,j:]
+            // We do 2) and 3) together on the fly:
+
             // R[j:,j:] -= 2. * outer(v, v * R[i:,i:])
             for (int i1 = j; i1 < R.rows; ++i1) {
                 for (int j1 = j; j1 < R.cols; ++j1) {
                     R(i1, j1) -= 2. * v(i1-j) * vR(j1-j);
                 }
             }
+
+            // Same for Q.
 
             // Compute v * Q[j:]
             vQ = 0; // Remember: vQ refers to vR
@@ -148,6 +162,7 @@ namespace yalal {
             }
         }
 
+        // Recall that Q is actually Q*
         cv::transpose(Q, Q);
     }
 
