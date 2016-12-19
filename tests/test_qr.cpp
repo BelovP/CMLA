@@ -31,11 +31,11 @@ int main(int argc, char* argv[]) {
     std::vector<cv::Mat_<real>> mats(matTypes.size());
 
     // random
-    mats[0].create(60, 60);
+    mats[0].create(400, 333);
     cv::randu(mats[0], -1., 1.);
 
     // diagonal
-    mats[1] = cv::Mat_<real>::zeros(117, 117);
+    mats[1] = cv::Mat_<real>::zeros(333, 333);
     for (int i = 0; i < mats[1].rows; ++i) {
         mats[1](i, i) = (cv::randu<real>() - 0.5) * 100;
     }
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    const int sparseMatSize = 233;
+    const int sparseMatSize = 411;
     mats[7] = cv::Mat_<real>::zeros(sparseMatSize, sparseMatSize);
     std::vector<int> permutation(sparseMatSize);
     for (int i = 0; i < sparseMatSize; ++i) {
@@ -89,12 +89,12 @@ int main(int argc, char* argv[]) {
 
     cv::Mat_<real> Q, R;
 
-    for (int qrType = yalal::QRMethod::GIVENS; qrType < qrTypes.size(); ++qrType) {
+    for (int qrType = 0; qrType < qrTypes.size(); ++qrType) {
         if (verbose) {
             std::cout << "*** " << qrTypes[qrType] << " ***" << std::endl;
         }
 
-        for (int matType = 0; matType < 1/*matTypes.size()*/; ++matType) {
+        for (int matType = 0; matType < matTypes.size(); ++matType) {
 
             Time start = Clock::now();
 

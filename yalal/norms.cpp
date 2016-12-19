@@ -140,7 +140,7 @@ namespace yalal {
 
     /*
      Это сам SVD по алгоритму bisection
-     Этот алгоритм есть в книжке "Handbook of Linear Algera" страница 45-9(742 of 1402),
+     Этот алгоритм есть в книжке "Handbook of Linear Algebra" страница 45-9(742 of 1402),
      алгоритм 4a. Ему на вход подается двудиагональная матрица "B", интервал в котором мы
      ищем сингулярные значения "a" и "b" и точность с которой мы хотим получить сингулярные
      значения "tol".
@@ -151,8 +151,8 @@ namespace yalal {
 
     real truncSVDForMaxSingularValue(cv::Mat_<real> & B, real a, real b, real tol) {
         int n = B.rows;
-        int n_a = countSingularValuesLowerThan(B, a);
-        int n_b = countSingularValuesLowerThan(B, b);
+        real n_a = countSingularValuesLowerThan(B, a);
+        real n_b = countSingularValuesLowerThan(B, b);
 
         if (n_a == n_b) {
             return 0;

@@ -1,7 +1,7 @@
 find_package(OpenCV 3 REQUIRED COMPONENTS core)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-find_package(OpenMP REQUIRED)
+find_package(OpenMP)
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS})
 
 set(SOURCES "")

@@ -80,8 +80,6 @@ int main() {
     mats[0].create(405, 405);
     cv::randu(mats[0], -1., 1.);
 
-//    mats[0] = (cv::Mat_<real>(3,3) << 3,2,1,8,1,8,0,3,3);
-
     // diagonal
     mats[1] = cv::Mat_<real>::zeros(133, 133);
     for (int i = 0; i < mats[1].rows; ++i) {
@@ -140,14 +138,12 @@ int main() {
 
         real our = matrixNorm(mats[i]);
 
-        if (std::abs(our - exact) > 1e-4) {
+        if (std::abs(our - exact) > 1e-3) {
             std::cout << "Wrong matrix norm at " << mats[i].rows << " x "
                       << mats[i].cols << " " << matTypes[i] << " matrix: expected "
                       << exact << " but got " << our << std::endl;
             return 1;
         }
-
-        std::cout << i << std::endl;
     }
 
     return 0;

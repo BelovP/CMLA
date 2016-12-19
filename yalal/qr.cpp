@@ -1,6 +1,8 @@
 #include <iostream>
 
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 #include "qr.hpp"
 #include "norms.hpp"
@@ -83,18 +85,21 @@ namespace yalal {
     }
 
     void QR_Householder(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
-        // it's actually Q*, will be transposed back at the end of the function
+        // Throughout the algorithm, Q is actually Q*, so it will be transposed
+        // back at the end of the function
         Q = cv::Mat_<real>::eye(A.rows, A.rows);
+
+        // Initialize R with the original matrix A
         A.copyTo(R);
 
         cv::Mat_<real> v(R.rows, 1);  // accomodation for all v's
         cv::Mat_<real> vR(R.rows, 1); // accomodation for v*R[j:,j:] and v*Q[j:]
         cv::Mat_<real> & vQ = vR;     // a reference with different name for convenience
 
+        // Values that occur in the Householder reflector formula
         real vNormSqr, vNorm, v0Sign, v0;
 
         for (int j = 0; j < R.cols; ++j) {
-            // Copy current column to v
             vNormSqr = 0;
 
             for (int k = j; k < R.rows; ++k) {
@@ -114,11 +119,6 @@ namespace yalal {
             vR = 0;
 
             for (int i1 = j; i1 < R.rows; ++i1) {
-//                cv::Mat_<real> vRng = v.rowRange(0, R.cols - j);
-//                cv::Mat_<real> Rrng = R.row(i1).colRange(j, R.cols);
-//                std::cout << vRng.rows << " " << vRng.cols << std::endl;
-//                std::cout << Rrng.rows << " " << Rrng.cols << std::endl;
-//                vR.rowRange(0, R.cols - j) += Rrng.dot(vRng.t());
                 for (int j1 = j; j1 < R.cols; ++j1) {
                     vR(j1-j) += v(i1-j) * R(i1, j1);
                 }

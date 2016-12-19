@@ -2,8 +2,6 @@
 #include "norms.hpp"
 #include <vector>
 
-#include <omp.h>
-
 const real close_to_zero_eps = 1e-8;
 
 using std::vector;

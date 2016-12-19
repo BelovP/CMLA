@@ -1,3 +1,4 @@
 build/
 .idea/
 speed_comparison/time_qr.txt
+extern/
