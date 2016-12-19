@@ -100,9 +100,9 @@ int main() {
     if(hasErrors(A_init, L, U, P, success, false, "diagonal")) return 1;
 
     // upper triangular
-    A = cv::Mat_<real>::zeros(354, 354);
-    for (int i = 0; i < 354; ++i) {
-        for (int j = i; j < 354; ++j) {
+    A = cv::Mat_<real>::zeros(6, 6);
+    for (int i = 0; i < A.rows; ++i) {
+        for (int j = i; j < A.cols; ++j) {
             A.at<real>(i, j) = (cv::randu<real>() - 0.5) * 2.;
         }
     }
@@ -119,6 +119,9 @@ int main() {
     A.copyTo(A_init);
     success = yalal::LU(A, MatStructure::LOWER_TRI);
     yalal::RecoverLU(A, L, U);
+//    std::cout << L << std::endl << std::endl << U << std::endl << std::endl;
+//    std::cout << L * U << std::endl << std::endl;
+//    std::cout << A_init << std::endl;
 
     if(hasErrors(A_init, L, U, P, success, false, "lower triangular")) return 1;
 

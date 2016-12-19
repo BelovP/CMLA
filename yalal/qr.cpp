@@ -81,11 +81,15 @@ namespace yalal {
     }
 
     void QR_Householder(cv::Mat_<real> & A, cv::Mat_<real> & Q, cv::Mat_<real> & R) {
-        // Throughout the algorithm, Q is actually Q*, so it will be transposed
+        // See notations at:
+        // https://d1b10bmlvqabco.cloudfront.net/attach/iuiaquv3t0y6vy/hztwcshoc1z5fx/iwqmciudqb6k/qr_standard.pdf
+
+        // In this function, Q actually means Q*, so it will be transposed
         // back at the end of the function
         Q = cv::Mat_<real>::eye(A.rows, A.rows);
 
         // Initialize R with the original matrix A
+        // Now we will apply Householder transformations to it sequentially
         A.copyTo(R);
 
         cv::Mat_<real> v(R.rows, 1);  // accomodation for all v's
@@ -117,13 +121,17 @@ namespace yalal {
             v(0) -= v0Sign * vNorm;
             v /= v0Sign * std::sqrt(2. * (vNormSqr - v0Sign * vNorm * v0));
 
-            // Now we need to compute new R. Because the left upper block of
-            // H_j is identity, it only affects R[j:,j:].
-            // That's why we get R[j:,j:] = H_j[j:,j:] * R[j:,j:] =>
-            // => R[j:,j:] = R[j:,j:] - 2 v v* R[j:,j:]
+            // Now we need to compute new R by multiplying the old R by
+            // Householder matrix H_j to nullify elements of the j-th column of R.
+            // Because the left upper block of H_j is identity, it only
+            // affects R[j:,j:]. That's why we get
+            // R[j:,j:] = H_j[j:,j:] * R[j:,j:] =>
+            // R[j:,j:] = R[j:,j:] - 2 v v* R[j:,j:]
             // To get the second term, we need to...
 
             // 1) compute v* * R[j:,j:]
+
+            // Set the result to zero
             vR = 0;
 
             for (int i1 = j; i1 < R.rows; ++i1) {
@@ -133,7 +141,7 @@ namespace yalal {
             }
 
             // 2) compute the outer product of v and vR
-            // 3) subtract it from R[j:,j:]
+            // 3) subtract it doubled from R[j:,j:]
             // We do 2) and 3) together on the fly:
 
             // R[j:,j:] -= 2. * outer(v, v * R[i:,i:])
@@ -143,7 +151,7 @@ namespace yalal {
                 }
             }
 
-            // Same for Q.
+            // Same as above for Q.
 
             // Compute v * Q[j:]
             vQ = 0; // Remember: vQ refers to vR

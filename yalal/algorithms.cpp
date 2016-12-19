@@ -3,15 +3,14 @@
 #include <vector>
 
 namespace yalal {
-	// Solves systems of the form Ax = f, where A - square matrix. LUx = f, => Ly = f, Ux = y
-    cv::Mat_<real> SolveSystem(cv::Mat_<real> A, cv::Mat_<real> & f, int matStructure) {
-    	assert(A.rows == A.cols);
-    	assert(A.rows == f.rows);
-    	int n = A.rows; 
 
-    	cv::Mat_<real> L, U; 
-    	LU(A, matStructure);
-    	RecoverLU(A, L, U);
+	// Solves systems of the form Ax = f, where A = LU - square matrix,
+	// L - lower triangular matrix,
+	// U - upper triangular matrix,
+	// LUx = f, => Ly = f, Ux = y
+    cv::Mat_<real> SolveSystem(cv::Mat_<real> & L, cv::Mat_<real> & U,
+							   cv::Mat_<real> & f, int matStructure) {
+    	int n = L.rows;
     	
     	// Forward step Ly = f.
     	cv::Mat_<real> y;  
